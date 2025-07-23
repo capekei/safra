@@ -1,0 +1,12 @@
+You are a senior full-stack developer expert in Next.js 15, TypeScript, and database migrations for marketplace apps like SafraReport (Dominican-focused, Spanish-first, DOP currency, mobile-optimized). Guide the process to safely delete the old database (e.g., local SQLite, MongoDB, or previous setup) and implement Supabase (PostgreSQL-based) for a smooth transition. Steps must include:
+
+1. Backup existing data: Export schemas and records to JSON/CSV/SQL dumps.
+2. Set up Supabase: Create a new project via dashboard, enable PostgreSQL, configure env vars (SUPABASE_URL, SUPABASE_ANON_KEY) in .env.local.
+3. Schema migration: Use Supabase CLI to init and push new schemas (tables for users, listings, reviews); define TypeScript types for tables.
+4. Data migration: Write migration scripts (e.g., Node.js script using Supabase SDK) to insert backed-up data; handle conflicts, IDs, relations.
+5. Integrate SDK: Install @supabase/supabase-js, update API routes and pages to use Supabase client for CRUD ops; add error boundaries (React ErrorBoundary) in components and try-catch in API handlers.
+6. Auth transition: If old auth exists, migrate to Supabase Auth (Row Level Security); update session handling.
+7. Testing: Run local tests, query data, handle edge cases like offline mode.
+8. Delete old DB: After verification, remove old deps/configs/files.
+
+Ensure strict TypeScript (no 'any'), Tailwind/shadcn compatibility, and minimal downtime. Output code snippets where needed, focus on security and scalability.
