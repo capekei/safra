@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafraReport - Quick Access Test</title>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            max-width: 800px; 
+            margin: 50px auto; 
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            background: #00ff00;
+            color: black;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #00dd00;
+            transform: translateY(-2px);
+        }
+        .mobile-test {
+            border: 2px dashed #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f0fff0;
+        }
+        h1 { color: #333; }
+        h2 { color: #00ff00; }
+        .status { 
+            display: inline-block; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 12px; 
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 SafraReport - Access Test</h1>
+        <p>Use these links to test your admin panel access and mobile footer visibility:</p>
+        
+        <h2>✅ Admin Panel Access</h2>
+        <p><span class="status success">FIXED</span> Development admin routes now available:</p>
+        
+        <a href="http://localhost:4000/dev-admin/dashboard" class="btn" target="_blank">
+            🎯 Dev Admin Dashboard
+        </a>
+        
+        <a href="http://localhost:4000/admin/dashboard" class="btn" target="_blank">
+            🔐 Standard Admin (requires Auth0)
+        </a>
+        
+        <h2>📱 Mobile Footer Test</h2>
+        <div class="mobile-test">
+            <p><span class="status success">FIXED</span> Footer is now hidden on mobile devices</p>
+            <p>To test:</p>
+            <ol>
+                <li>Visit the main site: <a href="http://localhost:4000" target="_blank">http://localhost:4000</a></li>
+                <li>Open browser developer tools (F12)</li>
+                <li>Switch to mobile view (device toolbar)</li>
+                <li>Scroll to bottom - footer should be hidden</li>
+                <li>Switch back to desktop view - footer should appear</li>
+            </ol>
+        </div>
+        
+        <h2>🔧 Technical Details</h2>
+        <ul>
+            <li><strong>Footer Mobile Hide:</strong> Uses <code>hidden md:block</code> Tailwind classes</li>
+            <li><strong>Admin Access:</strong> Development bypass routes at <code>/dev-admin/*</code></li>
+            <li><strong>Server Status:</strong> <span class="status info">Running on port 4000</span></li>
+        </ul>
+        
+        <p style="margin-top: 30px; padding: 15px; background: #e8f5e8; border-radius: 8px;">
+            <strong>🎉 Both issues resolved!</strong><br>
+            • Mobile footer is hidden ✅<br>
+            • Admin panel is accessible via /dev-admin/ routes ✅
+        </p>
+    </div>
+    
+    <script>
+        // Auto-refresh server status
+        fetch('http://localhost:4000/api/health').then(response => {
+            if (response.ok) {
+                console.log('✅ Server is running and responsive');
+            }
+        }).catch(() => {
+            console.log('❌ Server might not be running');
+        });
+    </script>
+</body>
+</html>

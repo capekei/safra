@@ -1,13 +1,13 @@
 import type { Express } from "express";
 import type { IStorage } from "./storage";
-import { authenticateAdmin as requireAdminAuth } from "./admin-middleware";
+import { authenticateAdmin as requireAdminAuth } from "./supabase-auth";
 import { db } from "./db";
 import { authors, articles } from "@shared/schema";
 import { eq, desc, like, or, sql } from "drizzle-orm";
 
 export function registerAuthorRoutes(app: Express, storage: IStorage) {
   // Get all authors with search
-  app.get("/api/admin/authors", requireAdminAuth, async (req: any, res) => {
+  app.get("/api/admin/authors", requireAdminAuth as any, async (req: any, res) => {
     try {
       const { search } = req.query;
       
@@ -43,7 +43,7 @@ export function registerAuthorRoutes(app: Express, storage: IStorage) {
   });
 
   // Get single author
-  app.get("/api/admin/authors/:id", requireAdminAuth, async (req: any, res) => {
+  app.get("/api/admin/authors/:id", requireAdminAuth as any, async (req: any, res) => {
     try {
       const { id } = req.params;
       
@@ -64,7 +64,7 @@ export function registerAuthorRoutes(app: Express, storage: IStorage) {
   });
 
   // Create author
-  app.post("/api/admin/authors", requireAdminAuth, async (req: any, res) => {
+  app.post("/api/admin/authors", requireAdminAuth as any, async (req: any, res) => {
     try {
       const { name, email, bio } = req.body;
       
@@ -102,7 +102,7 @@ export function registerAuthorRoutes(app: Express, storage: IStorage) {
   });
 
   // Update author
-  app.put("/api/admin/authors/:id", requireAdminAuth, async (req: any, res) => {
+  app.put("/api/admin/authors/:id", requireAdminAuth as any, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { name, email, bio } = req.body;
@@ -146,7 +146,7 @@ export function registerAuthorRoutes(app: Express, storage: IStorage) {
   });
 
   // Delete author
-  app.delete("/api/admin/authors/:id", requireAdminAuth, async (req: any, res) => {
+  app.delete("/api/admin/authors/:id", requireAdminAuth as any, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { reassignTo } = req.query;

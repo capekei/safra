@@ -8,6 +8,38 @@ import { Button } from "@/components/ui/button";
 import { MessageCircle, MapPin, Star, Phone, Plus, Mail, Globe } from "lucide-react";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
+import { ErrorBoundary } from "react-error-boundary";
+
+interface Business {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  website?: string;
+  images: string[];
+  priceRange: number;
+  averageRating: number;
+  totalReviews: number;
+  verified: boolean;
+  active: boolean;
+  municipality?: string;
+  province?: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+    icon: string;
+  };
+  createdAt: string;
+}
 
 export default function Resenas() {
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
@@ -19,7 +51,7 @@ export default function Resenas() {
     data: businesses, 
     isLoading,
     error 
-  } = useQuery({
+  } = useQuery<Business[]>({
     queryKey: [resenasUrl],
   });
 

@@ -1,0 +1,107 @@
+name: SafraReport Railway Deployment
+# Dominican Marketplace CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, production ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    name: 🧪 Test SafraReport
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📦 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: 🔧 Install dependencies
+      run: npm ci
+      
+    - name: 🏗️ Build application
+      run: npm run build
+      
+    - name: ✅ TypeScript check
+      run: npm run check
+      
+    - name: 🧪 Run health check
+      run: |
+        # Start server in background
+        NODE_ENV=production npm start &
+        SERVER_PID=$!
+        
+        # Wait for server to start
+        sleep 10
+        
+        # Run health check
+        node railway-healthcheck.js
+        
+        # Clean up
+        kill $SERVER_PID || true
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+
+  deploy:
+    name: 🚀 Deploy to Railway
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🚄 Deploy to Railway
+      uses: railwayapp/railway-deploy@v1
+      with:
+        railway-token: ${{ secrets.RAILWAY_TOKEN }}
+        service: safrareport-web
+        
+    - name: ✅ Post-deploy health check
+      run: |
+        # Wait for deployment to be ready
+        sleep 30
+        
+        # Check health endpoint
+        curl -f ${{ secrets.RAILWAY_APP_URL }}/api/health
+        
+        # Check Spanish UI
+        curl -f -I ${{ secrets.RAILWAY_APP_URL }}/
+        
+        echo "✅ SafraReport deployed successfully!"
+
+  tag-release:
+    name: 🏷️ Tag Release
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: 🏷️ Create release tag
+      run: |
+        # Generate version tag
+        VERSION="v$(date +%Y%m%d)-$(git rev-parse --short HEAD)"
+        
+        # Create and push tag
+        git tag -a $VERSION -m "SafraReport release $VERSION - Dominican Marketplace"
+        git push origin $VERSION
+        
+        echo "🏷️ Created release tag: $VERSION"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,18 +1,23 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { db } from "./db";
 import { articles, categories, authors } from "@shared/schema";
 import { eq, desc, and, or, sql } from "drizzle-orm";
-import { authenticateAdmin, logAdminAction, type AuthRequest } from "./admin-middleware";
+import { logAdminAction } from "./admin-middleware";
+import { authenticateSupabase, requireAdmin, type AuthRequest } from "./supabase-auth";
+import { DatabaseUser } from "./supabase";
 
 const router = Router();
 
+// Apply authentication middleware to all routes
+router.use(authenticateSupabase as any, requireAdmin as any);
+
 // Get all articles for admin panel
-router.get("/articles", authenticateAdmin, async (req: AuthRequest, res) => {
+router.get("/articles", (async (req: any, res: Response) => {
   try {
     const { search, categoryId, published, limit = "50" } = req.query;
     
     // Build comprehensive query to get all articles with their relationships
-    let query = db
+    let query: any = db
       .select({
         article: {
           id: articles.id,
@@ -77,26 +82,27 @@ router.get("/articles", authenticateAdmin, async (req: AuthRequest, res) => {
       .limit(parseInt(limit as string));
 
     // Log admin action
-    logAdminAction(
-      req.adminUser?.userId || 'unknown', 
-      'view_articles', 
-      { 
-        search, 
-        categoryId, 
-        published, 
-        count: results.length 
+    await logAdminAction(req, {
+      action: 'view_articles',
+      entityType: 'article',
+      entityId: null,
+      changes: {
+        search,
+        categoryId,
+        published,
+        count: results.length
       }
-    );
+    });
 
     res.json(results);
   } catch (error) {
     console.error("Error fetching articles for admin:", error);
     res.status(500).json({ error: "Error al obtener artículos" });
   }
-});
+}) as any);
 
 // Get article statistics for admin dashboard
-router.get("/stats", authenticateAdmin, async (req: AuthRequest, res) => {
+router.get("/stats", (async (req: any, res: Response) => {
   try {
     const totalArticles = await db
       .select({ count: sql<number>`count(*)` })
@@ -149,10 +155,10 @@ router.get("/stats", authenticateAdmin, async (req: AuthRequest, res) => {
     console.error("Error fetching admin stats:", error);
     res.status(500).json({ error: "Error al obtener estadísticas" });
   }
-});
+}) as any);
 
 // Update article status (publish/unpublish, feature, breaking)
-router.patch("/articles/:id/status", authenticateAdmin, async (req: AuthRequest, res) => {
+router.patch("/articles/:id/status", (async (req: any, res: Response) => {
   try {
     const { id } = req.params;
     const { published, isFeatured, isBreaking } = req.body;
@@ -184,21 +190,22 @@ router.patch("/articles/:id/status", authenticateAdmin, async (req: AuthRequest,
       return res.status(404).json({ error: "Artículo no encontrado" });
     }
 
-    logAdminAction(
-      req.adminUser?.userId || 'unknown',
-      'update_article_status',
-      { articleId: id, ...updateData }
-    );
+    await logAdminAction(req, {
+      action: 'update_article_status',
+      entityType: 'article',
+      entityId: id,
+      changes: updateData
+    });
 
     res.json(updatedArticle);
   } catch (error) {
     console.error("Error updating article status:", error);
     res.status(500).json({ error: "Error al actualizar estado del artículo" });
   }
-});
+}) as any);
 
 // Delete article
-router.delete("/articles/:id", authenticateAdmin, async (req: AuthRequest, res) => {
+router.delete("/articles/:id", (async (req: any, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -211,17 +218,18 @@ router.delete("/articles/:id", authenticateAdmin, async (req: AuthRequest, res) 
       return res.status(404).json({ error: "Artículo no encontrado" });
     }
 
-    logAdminAction(
-      req.adminUser?.userId || 'unknown',
-      'delete_article',
-      { articleId: id, title: deletedArticle.title }
-    );
+    await logAdminAction(req, {
+      action: 'delete_article',
+      entityType: 'article',
+      entityId: id,
+      changes: { title: deletedArticle.title }
+    });
 
     res.json({ message: "Artículo eliminado correctamente" });
   } catch (error) {
     console.error("Error deleting article:", error);
     res.status(500).json({ error: "Error al eliminar artículo" });
   }
-});
+}) as any);
 
 export default router;

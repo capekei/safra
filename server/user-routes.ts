@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from "express";
 import { storage } from "./storage";
-import { authenticateUser } from "./auth-middleware";
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
+import { authenticateSupabase, type AuthRequest } from "./supabase-auth";
 
 const router = Router();
 
@@ -37,9 +37,9 @@ const upload = multer({
 });
 
 // Get user's classifieds
-router.get("/classifieds", authenticateUser, async (req: Request, res: Response) => {
+router.get("/classifieds", authenticateSupabase as any, (async (req: any, res: Response) => {
   try {
-    const userId = (req.session as any)?.user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "No autorizado" });
     }
@@ -50,12 +50,12 @@ router.get("/classifieds", authenticateUser, async (req: Request, res: Response)
     console.error('Error fetching user classifieds:', error);
     res.status(500).json({ message: "Error al obtener clasificados" });
   }
-});
+}));
 
 // Create a new classified
-router.post("/classifieds", authenticateUser, upload.array('images', 5), async (req: Request, res: Response) => {
+router.post("/classifieds", authenticateSupabase as any, upload.array('images', 5), async (req: any, res: Response) => {
   try {
-    const userId = (req.session as any)?.user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "No autorizado" });
     }
@@ -85,9 +85,9 @@ router.post("/classifieds", authenticateUser, upload.array('images', 5), async (
 });
 
 // Delete a classified
-router.delete("/classifieds/:id", authenticateUser, async (req: Request, res: Response) => {
+router.delete("/classifieds/:id", authenticateSupabase as any, async (req: any, res: Response) => {
   try {
-    const userId = (req.session as any)?.user?.id;
+    const userId = req.user?.id;
     const classifiedId = parseInt(req.params.id);
     
     if (!userId) {
@@ -109,9 +109,9 @@ router.delete("/classifieds/:id", authenticateUser, async (req: Request, res: Re
 });
 
 // Get user's reviews
-router.get("/reviews", authenticateUser, async (req: Request, res: Response) => {
+router.get("/reviews", authenticateSupabase as any, (async (req: any, res: Response) => {
   try {
-    const userId = (req.session as any)?.user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "No autorizado" });
     }
@@ -122,12 +122,12 @@ router.get("/reviews", authenticateUser, async (req: Request, res: Response) => 
     console.error('Error fetching user reviews:', error);
     res.status(500).json({ message: "Error al obtener reseñas" });
   }
-});
+}) as any);
 
 // Create a new review
-router.post("/reviews", authenticateUser, upload.array('images', 3), async (req: Request, res: Response) => {
+router.post("/reviews", authenticateSupabase as any, upload.array('images', 3), async (req: any, res: Response) => {
   try {
-    const userId = (req.session as any)?.user?.id;
+    const userId = req.user?.id;
     const user = (req.session as any)?.user;
     
     if (!userId) {
@@ -148,8 +148,16 @@ router.post("/reviews", authenticateUser, upload.array('images', 3), async (req:
         businessId = existingBusiness.id;
       } else {
         // Create new business
+        const slug = req.body.businessName
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim();
+        
         const newBusiness = await storage.createBusiness({
           name: req.body.businessName,
+          slug: slug,
           categoryId: parseInt(req.body.categoryId),
           active: false, // New businesses start as inactive until verified
         });
@@ -180,9 +188,9 @@ router.post("/reviews", authenticateUser, upload.array('images', 3), async (req:
 });
 
 // Delete a review
-router.delete("/reviews/:id", authenticateUser, async (req: Request, res: Response) => {
+router.delete("/reviews/:id", authenticateSupabase as any, async (req: any, res: Response) => {
   try {
-    const userId = (req.session as any)?.user?.id;
+    const userId = req.user?.id;
     const reviewId = parseInt(req.params.id);
     
     if (!userId) {
@@ -204,9 +212,9 @@ router.delete("/reviews/:id", authenticateUser, async (req: Request, res: Respon
 });
 
 // Get user preferences
-router.get("/preferences", authenticateUser, async (req: Request, res: Response) => {
+router.get("/preferences", authenticateSupabase as any, async (req: any, res: Response) => {
   try {
-    const userId = (req.session as any)?.user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "No autorizado" });
     }
@@ -228,9 +236,9 @@ router.get("/preferences", authenticateUser, async (req: Request, res: Response)
 });
 
 // Update user preferences
-router.put("/preferences", authenticateUser, async (req: Request, res: Response) => {
+router.put("/preferences", authenticateSupabase as any, async (req: any, res: Response) => {
   try {
-    const userId = (req.session as any)?.user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "No autorizado" });
     }
@@ -244,7 +252,7 @@ router.put("/preferences", authenticateUser, async (req: Request, res: Response)
 });
 
 // Search businesses (for review creation) - this is outside user routes
-router.get("/businesses/search", async (req: Request, res: Response) => {
+router.get("/businesses/search", async (req: any, res: Response) => {
   try {
     const query = req.query.q as string;
     if (!query || query.length < 3) {

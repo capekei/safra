@@ -27,6 +27,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useApiClient } from "@/lib/api";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -47,6 +48,7 @@ export default function AdminModeration() {
   const [moderationNotes, setModerationNotes] = useState("");
   const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
+  const api = useApiClient();
 
   useEffect(() => {
     fetchModerationQueue();
@@ -54,18 +56,7 @@ export default function AdminModeration() {
 
   const fetchModerationQueue = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/moderation?status=pending", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Error fetching moderation queue");
-      }
-
-      const data = await response.json();
+      const data = await api.get("/admin/moderation?status=pending");
       setItems(data);
     } catch (error) {
       console.error("Error:", error);
@@ -81,22 +72,10 @@ export default function AdminModeration() {
 
   const handleModeration = async (itemId: number, status: "approved" | "rejected") => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(`/api/admin/moderation/${itemId}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status,
-          notes: moderationNotes,
-        }),
+      await api.post(`/admin/moderation/${itemId}`, {
+        status,
+        notes: moderationNotes,
       });
-
-      if (!response.ok) {
-        throw new Error("Error moderating content");
-      }
 
       toast({
         title: "Éxito",

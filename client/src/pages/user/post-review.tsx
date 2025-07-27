@@ -27,6 +27,14 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, X, Star, Building, Search } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 
+// Business Category interface
+interface BusinessCategory {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+}
+
 const postReviewSchema = z.object({
   businessName: z.string().min(2, "Ingresa el nombre del negocio"),
   businessId: z.string().optional(),
@@ -63,7 +71,7 @@ export default function PostReview() {
   }, [isAuthenticated, authLoading, toast]);
 
   // Fetch business categories
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<BusinessCategory[]>({
     queryKey: ['/api/business-categories'],
   });
 
@@ -306,7 +314,7 @@ export default function PostReview() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {categories.map((cat: any) => (
+                            {categories.map((cat: BusinessCategory) => (
                               <SelectItem key={cat.id} value={String(cat.id)}>
                                 {cat.name}
                               </SelectItem>

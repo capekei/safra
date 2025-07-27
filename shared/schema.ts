@@ -314,7 +314,7 @@ export const adminUsers = pgTable("admin_users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  auth0Id: varchar("auth0_id").unique(), // Link to Auth0 user ID
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   role: text("role").notNull().default("editor"), // admin, editor, moderator
@@ -330,12 +330,14 @@ export const adminUsers = pgTable("admin_users", {
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   adminUserId: integer("admin_user_id").references(() => adminUsers.id).notNull(),
-  action: text("action").notNull(), // create, update, delete, publish, unpublish, approve, reject
-  entityType: text("entity_type").notNull(), // article, classified, review, user
-  entityId: integer("entity_id").notNull(),
-  changes: json("changes").$type<Record<string, any>>(),
-  ipAddress: text("ip_address"),
+  action: varchar("action", { length: 255 }).notNull(),
+  entityType: varchar("entity_type", { length: 255 }),
+  entityId: varchar("entity_id", { length: 255 }),
+  changes: jsonb("changes"),
+  details: text("details"),
+  ipAddress: varchar("ip_address", { length: 50 }),
   userAgent: text("user_agent"),
+  success: boolean("success").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -404,6 +406,12 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
   createdAt: true,
 });
 
+export const insertModerationQueueSchema = createInsertSchema(moderationQueue).omit({
+  id: true,
+  createdAt: true,
+  moderatedAt: true,
+});
+
 export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({
   id: true,
   createdAt: true,
@@ -415,6 +423,7 @@ export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type ModerationQueue = typeof moderationQueue.$inferSelect;
+export type InsertModerationQueue = z.infer<typeof insertModerationQueueSchema>;
 export type AdminSession = typeof adminSessions.$inferSelect;
 export type InsertAdminSession = z.infer<typeof insertAdminSessionSchema>;
 
@@ -448,6 +457,7 @@ export const ads = pgTable("ads", {
   maxClicks: integer("max_clicks"),
   impressions: integer("impressions").default(0),
   clicks: integer("clicks").default(0),
+  status: varchar("status", { length: 20 }).default("active"),
   active: boolean("active").default(true),
   createdBy: integer("created_by").references(() => adminUsers.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

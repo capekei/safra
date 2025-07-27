@@ -23,8 +23,9 @@ export async function apiRequest(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  // In production, ensure we're using the correct base URL
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+  // Use Vite proxy in development, explicit URL in production
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 
+    (import.meta.env.MODE === 'development' ? '' : window.location.origin);
   const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
 
   // Only log in development for debugging
@@ -57,8 +58,9 @@ export const getQueryFn: <T>(options: {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // In production, ensure we're using the correct base URL
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+    // Use Vite proxy in development, explicit URL in production
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 
+      (import.meta.env.MODE === 'development' ? '' : window.location.origin);
     const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
 
     // Only log in development for debugging

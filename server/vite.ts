@@ -20,51 +20,75 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true as const,
-  };
+  try {
+    console.log('🔄 Setting up Vite middleware...');
+    
+    const serverOptions = {
+      middlewareMode: true,
+      hmr: { server },
+      allowedHosts: true as const,
+    };
 
-  const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
+    const vite = await createViteServer({
+      ...viteConfig,
+      configFile: false,
+      customLogger: {
+        ...viteLogger,
+        error: (msg, options) => {
+          console.error('🔥 Vite middleware error:', msg);
+          if (options?.error) {
+            console.error('🔍 Error details:', options.error);
+          }
+          // Log and continue instead of killing the process
+          viteLogger.error(msg, options);
+        },
       },
-    },
-    server: serverOptions,
-    appType: "custom",
-  });
+      server: serverOptions,
+      appType: "custom",
+    });
 
-  app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
+    console.log('✅ Vite server created successfully');
+    
+    app.use(vite.middlewares);
+    console.log('✅ Vite middlewares registered');
+    
+    app.use("*", async (req, res, next) => {
+      const url = req.originalUrl;
 
-    try {
-      const clientTemplate = path.resolve(
-        import.meta.dirname,
-        "..",
-        "client",
-        "index.html",
-      );
+      // Skip API routes and uploads
+      if (url.startsWith('/api') || url.startsWith('/uploads')) {
+        return next();
+      }
 
-      // always reload the index.html file from disk incase it changes
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
-      );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
-    }
-  });
+      try {
+        const clientTemplate = path.resolve(
+          import.meta.dirname,
+          "..",
+          "client",
+          "index.html",
+        );
+
+        // always reload the index.html file from disk incase it changes
+        let template = await fs.promises.readFile(clientTemplate, "utf-8");
+        template = template.replace(
+          `src="/src/main.tsx"`,
+          `src="/src/main.tsx?v=${nanoid()}"`,
+        );
+        const page = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      } catch (e) {
+        console.error('🔥 Vite SSR error:', e);
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
+    
+    console.log('✅ Vite catch-all handler registered');
+  } catch (error) {
+    console.error('❌ FATAL: Failed to setup Vite middleware:', error);
+    console.error('🔧 Server will continue without Vite middleware');
+    // Continue without Vite instead of crashing
+  }
 }
 
 export function serveStatic(app: Express) {

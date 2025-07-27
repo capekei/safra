@@ -111,3 +111,10 @@ export interface ReviewType {
   approved: boolean;
   createdAt: string;
 }
+
+export const ROUTES = {
+  HOME: '/',
+  ACCOUNT: "/cuenta",
+  ADMIN: "/admin",
+  LOGIN: '/login',
+} as const;

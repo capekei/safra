@@ -25,6 +25,59 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { ErrorBoundary } from "react-error-boundary";
+
+// User Classified interface
+interface UserClassified {
+  id: number;
+  title: string;
+  description: string;
+  price?: number;
+  currency: string;
+  images: string[];
+  contactName: string;
+  contactPhone: string;
+  municipality?: string;
+  province?: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+    icon: string;
+  };
+  createdAt: string;
+  expiresAt: string;
+  featured: boolean;
+  active: boolean;
+  status: string;
+  views?: number;
+}
+
+// User Review interface
+interface UserReview {
+  id: number;
+  businessId: number;
+  rating: number;
+  title?: string;
+  content: string;
+  images: string[];
+  helpful: number;
+  approved: boolean;
+  createdAt: string;
+  business: {
+    id: number;
+    name: string;
+    slug: string;
+    category: {
+      name: string;
+      icon: string;
+    };
+  };
+}
 
 export default function UserDashboard() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
@@ -45,13 +98,13 @@ export default function UserDashboard() {
   }, [isAuthenticated, authLoading, toast]);
 
   // Fetch user classifieds
-  const { data: classifieds = [], isLoading: classifiedsLoading } = useQuery({
+  const { data: classifieds = [], isLoading: classifiedsLoading } = useQuery<UserClassified[]>({
     queryKey: ['/api/user/classifieds'],
     enabled: isAuthenticated,
   });
 
   // Fetch user reviews
-  const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
+  const { data: reviews = [], isLoading: reviewsLoading } = useQuery<UserReview[]>({
     queryKey: ['/api/user/reviews'],
     enabled: isAuthenticated,
   });
@@ -186,7 +239,7 @@ export default function UserDashboard() {
               <div>
                 <p className="text-sm text-gray-600">Vistas Totales</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {classifieds.reduce((acc: number, c: any) => acc + (c.views || 0), 0)}
+                  {classifieds.reduce((acc: number, c: UserClassified) => acc + (c.views || 0), 0)}
                 </p>
               </div>
               <Eye className="w-8 h-8 text-green-600" />
@@ -219,7 +272,7 @@ export default function UserDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {classifieds.map((classified: any) => (
+                  {classifieds.map((classified: UserClassified) => (
                     <div key={classified.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -254,7 +307,7 @@ export default function UserDashboard() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.location.href = `/clasificados/${classified.categorySlug}/${classified.id}`}
+                            onClick={() => window.location.href = `/clasificados/${classified.category.slug}/${classified.id}`}
                           >
                             Ver
                           </Button>
@@ -285,12 +338,12 @@ export default function UserDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {reviews.map((review: any) => (
+                  {reviews.map((review: UserReview) => (
                     <div key={review.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <h3 className="font-semibold text-lg text-gray-900 mb-1">
-                            {review.businessName}
+                            {review.business.name}
                           </h3>
                           <div className="flex items-center gap-2 mb-2">
                             <div className="flex">

@@ -1,41 +1,53 @@
 import { Link, useLocation } from "wouter";
-import { Home, Tag, Star, Search, User } from "lucide-react";
+import { Home, Tag, Star, Search, User, Shield } from "lucide-react";
+import { ROUTES } from "@/lib/types";
+import { useAuth } from "@/hooks/useAuth";
 
 export function MobileBottomNav() {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   const navItems = [
     {
       icon: Home,
       label: "Inicio",
-      href: "/",
-      isActive: location === "/"
-    },
-    {
-      icon: Tag,
-      label: "Clasificados",
-      href: "/clasificados",
-      isActive: location.startsWith("/clasificados")
-    },
-    {
-      icon: Star,
-      label: "Reseñas",
-      href: "/resenas",
-      isActive: location.startsWith("/resenas")
+      href: ROUTES.HOME,
+      isActive: location === ROUTES.HOME,
     },
     {
       icon: Search,
       label: "Buscar",
       href: "/buscar",
-      isActive: location.startsWith("/buscar")
+      isActive: location.startsWith("/buscar"),
+    },
+    {
+      icon: Tag,
+      label: "Clasificados",
+      href: "/clasificados",
+      isActive: location.startsWith("/clasificados"),
+    },
+    {
+      icon: Star,
+      label: "Reseñas",
+      href: "/resenas",
+      isActive: location.startsWith("/resenas"),
     },
     {
       icon: User,
       label: "Perfil",
-      href: "/perfil",
-      isActive: location.startsWith("/perfil")
-    }
+      href: ROUTES.ACCOUNT,
+      isActive: location.startsWith(ROUTES.ACCOUNT),
+    },
   ];
+
+  if (user && user.role === 'admin') {
+    navItems.push({
+      icon: Shield,
+      label: "Admin",
+      href: ROUTES.ADMIN,
+      isActive: location.startsWith(ROUTES.ADMIN),
+    });
+  }
 
   return (
     <nav className="mobile-nav fixed bottom-4 left-4 right-4 glass-effect p-2 z-40">

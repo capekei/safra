@@ -28,6 +28,21 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, X, Phone, Mail, MessageCircle, MapPin, DollarSign } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 
+// Category interface
+interface ClassifiedCategory {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+}
+
+// Province interface  
+interface Province {
+  id: number;
+  name: string;
+  code: string;
+}
+
 const postClassifiedSchema = z.object({
   title: z.string().min(5, "El título debe tener al menos 5 caracteres"),
   description: z.string().min(20, "La descripción debe tener al menos 20 caracteres"),
@@ -65,12 +80,12 @@ export default function PostClassified() {
   }, [isAuthenticated, authLoading, toast]);
 
   // Fetch categories
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<ClassifiedCategory[]>({
     queryKey: ['/api/classified-categories'],
   });
 
   // Fetch provinces
-  const { data: provinces = [] } = useQuery({
+  const { data: provinces = [] } = useQuery<Province[]>({
     queryKey: ['/api/provinces'],
   });
 
@@ -241,7 +256,7 @@ export default function PostClassified() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {categories.map((cat: any) => (
+                            {categories.map((cat: ClassifiedCategory) => (
                               <SelectItem key={cat.id} value={String(cat.id)}>
                                 {cat.name}
                               </SelectItem>
@@ -474,7 +489,7 @@ export default function PostClassified() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {provinces.map((prov: any) => (
+                            {provinces.map((prov: Province) => (
                               <SelectItem key={prov.id} value={String(prov.id)}>
                                 {prov.name}
                               </SelectItem>

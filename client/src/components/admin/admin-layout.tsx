@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { useState } from "react";
+import { useLocation, Link } from "wouter";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +19,6 @@ import {
   History,
   Target,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -25,101 +26,73 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
-  const [, navigate] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem("adminToken");
-    const userData = localStorage.getItem("adminUser");
-    
-    if (!token || !userData) {
-      navigate("/admin/login");
-      return;
-    }
-
-    setUser(JSON.parse(userData));
-  }, [navigate]);
+  const { user, signOut } = useAuth();
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      
-      await fetch("/api/admin/logout", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
-      
-      toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión exitosamente",
-      });
-      
-      navigate("/admin/login");
+      await signOut();
+      window.location.href = '/';
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error('Error cerrando sesión:', error);
     }
   };
+
+  // Determine base path for admin routes (dev-admin in development, admin in production)
+  const basePath = (import.meta.env.DEV && location.startsWith('/dev-admin')) ? '/dev-admin' : '/admin';
 
   const menuItems = [
     {
       title: "Dashboard",
       icon: Home,
-      href: "/admin/dashboard",
+      href: `${basePath}/dashboard`,
     },
     {
       title: "Artículos",
       icon: Newspaper,
-      href: "/admin/articles",
+      href: `${basePath}/articles`,
     },
     {
       title: "Autores",
       icon: Users,
-      href: "/admin/authors",
+      href: `${basePath}/authors`,
     },
     {
       title: "Clasificados",
       icon: FileText,
-      href: "/admin/classifieds",
+      href: `${basePath}/classifieds`,
     },
     {
       title: "Reseñas",
       icon: Star,
-      href: "/admin/reviews",
+      href: `${basePath}/reviews`,
     },
     {
       title: "Anuncios",
       icon: Target,
-      href: "/admin/ads",
+      href: `${basePath}/ads`,
     },
     {
       title: "Moderación",
       icon: ShieldCheck,
-      href: "/admin/moderation",
+      href: `${basePath}/moderation`,
     },
     {
       title: "Usuarios",
       icon: Users,
-      href: "/admin/users",
+      href: `${basePath}/users`,
       roleRequired: "admin",
     },
     {
       title: "Base de Datos",
       icon: Database,
-      href: "/admin/database",
+      href: `${basePath}/database`,
       roleRequired: "admin",
     },
     {
       title: "Registros",
       icon: History,
-      href: "/admin/audit",
+      href: `${basePath}/audit`,
       roleRequired: "admin",
     },
   ];
@@ -177,11 +150,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
           <div className="absolute bottom-0 left-0 right-0 p-4">
             {user && (
-              <div className="mb-4 px-4">
-                <p className="text-sm font-medium text-gray-900">
-                  {user.firstName} {user.lastName}
-                </p>
-                <p className="text-xs text-gray-600">{user.role}</p>
+              <div className="flex items-center gap-3 mb-4 px-4">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={user?.profileImageUrl} />
+                  <AvatarFallback>{user?.firstName?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
               </div>
             )}
             <Button

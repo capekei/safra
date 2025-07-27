@@ -16,6 +16,8 @@ import {
   ThumbsUp,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { useApiClient } from "@/lib/api";
 import { Progress } from "@/components/ui/progress";
 
 interface DashboardStats {
@@ -37,6 +39,8 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const api = useApiClient();
 
   useEffect(() => {
     fetchStats();
@@ -44,21 +48,14 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/stats", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Error fetching stats");
-      }
-
-      const data = await response.json();
+      const data = await api.get("/admin/stats");
       setStats(data);
     } catch (error) {
-      console.error("Error:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las estadísticas.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

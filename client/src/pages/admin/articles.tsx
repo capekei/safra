@@ -15,6 +15,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { ImageDropzone } from "@/components/admin/image-dropzone";
 import { VideoDropzone } from "@/components/admin/video-dropzone";
+import { useApiClient } from "@/lib/api";
 
 interface Author {
   id: number;
@@ -59,13 +60,16 @@ export default function AdminArticlesMinimalist() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const { toast } = useToast();
+  const api = useApiClient();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     title: "",
+    slug: "",
     excerpt: "",
     content: "",
     featuredImage: "",
     videoUrl: "",
+    categoryId: "",
     categoryIds: [] as string[],
     published: false,
     isFeatured: false,
@@ -81,21 +85,12 @@ export default function AdminArticlesMinimalist() {
 
   const fetchArticles = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
       const params = new URLSearchParams();
       if (searchTerm) params.append("search", searchTerm);
       if (selectedCategory !== "all") params.append("category", selectedCategory);
       if (selectedStatus !== "all") params.append("status", selectedStatus);
 
-      const response = await fetch(`/api/admin/articles?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch articles");
-
-      const data = await response.json();
+      const data = await api.get(`/admin/articles?${params.toString()}`);
       setArticles(data);
     } catch (error) {
       toast({
@@ -110,19 +105,14 @@ export default function AdminArticlesMinimalist() {
 
   const fetchAuthors = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/authors", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch authors");
-
-      const data = await response.json();
+      const data = await api.get("/admin/authors");
       setAuthors(data);
     } catch (error) {
-      console.error("Error fetching authors:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los autores",
+        variant: "destructive",
+      });
     }
   };
 
@@ -147,231 +137,103 @@ export default function AdminArticlesMinimalist() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Estás seguro de eliminar este artículo?")) return;
-
-    try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(`/api/admin/articles/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to delete article");
-
-      toast({
-        title: "Éxito",
-        description: "Artículo eliminado correctamente",
-      });
-
-      fetchArticles();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el artículo",
-        variant: "destructive",
-      });
+    if (window.confirm("¿Estás seguro de que quieres eliminar este artículo?")) {
+      try {
+        await api.delete(`/admin/articles/${id}`);
+        toast({
+          title: "Artículo eliminado",
+          description: "El artículo ha sido eliminado exitosamente.",
+        });
+        fetchArticles();
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar el artículo",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const togglePublished = async (article: ArticleData) => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(`/api/admin/articles/${article.article.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          published: !article.article.published,
-        }),
+      await api.put(`/admin/articles/${article.article.id}/publish`, {
+        published: !article.article.published,
       });
-
-      if (!response.ok) throw new Error("Failed to update article");
 
       toast({
-        title: "Éxito",
-        description: article.article.published ? "Artículo despublicado" : "Artículo publicado",
+        title: `Artículo ${!article.article.published ? "publicado" : "despublicado"}`,
       });
-
-      fetchArticles();
+      fetchArticles(); // Refresh the list
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo actualizar el artículo",
+        description: "No se pudo cambiar el estado del artículo",
         variant: "destructive",
       });
     }
   };
 
   const handleSaveArticle = async () => {
+    if (!formData.title || !formData.content) {
+      toast({
+        title: "Error de validación",
+        description: "El título y el contenido son obligatorios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    const articleFormData = new FormData();
+
+    // Append all form data fields dynamically
+    Object.keys(formData).forEach((key) => {
+      const value = formData[key];
+      if (key === "categoryIds" && Array.isArray(value)) {
+        value.forEach((id: string) => {
+          articleFormData.append("categoryIds[]", id);
+        });
+      } else if (value !== null && value !== undefined) {
+        articleFormData.append(key, value);
+      }
+    });
+
+    // Append files
+    imageFiles.forEach((file) => {
+      articleFormData.append("images", file);
+    });
+    videoFiles.forEach((file) => {
+      articleFormData.append("videos", file);
+    });
+
     try {
-      const token = localStorage.getItem("adminToken");
-      
-      // Validate required fields
-      if (!formData.title || formData.title.trim().length === 0) {
-        toast({
-          title: "Error",
-          description: "El título es obligatorio",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (!formData.content || formData.content.trim().length === 0) {
-        toast({
-          title: "Error",
-          description: "El contenido es obligatorio",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Safe integer conversion with validation
-      const safeParseInt = (value: string, defaultValue: number = 1): number => {
-        if (!value || value.trim() === "") return defaultValue;
-        const parsed = parseInt(value);
-        return isNaN(parsed) ? defaultValue : parsed;
-      };
-
-      const formDataToSend = new FormData();
-      
+      let response;
       if (editingArticle) {
-        // For updates, send JSON directly
-        const url = `/api/admin/articles/${editingArticle.article.id}`;
-        const response = await fetch(url, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            title: formData.title.trim(),
-            excerpt: formData.excerpt?.trim() || "",
-            content: formData.content.trim(),
-            slug: formData.slug || formData.title.toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/^-+|-+$/g, ""),
-            categoryId: safeParseInt(formData.categoryId, 1),
-            authorId: safeParseInt(formData.authorId, 1),
-            categoryIds: formData.categoryIds.length > 0 ? formData.categoryIds.map(id => safeParseInt(id, 1)) : [1],
-            published: Boolean(formData.published),
-            isFeatured: Boolean(formData.isFeatured),
-            isBreaking: Boolean(formData.isBreaking),
-            featuredImage: formData.featuredImage?.trim() || null,
-            videoUrl: formData.videoUrl?.trim() || null,
-            provinceId: formData.provinceId ? safeParseInt(formData.provinceId, null) : null,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          let errorMessage = "Error al actualizar artículo";
-          try {
-            const error = JSON.parse(errorText);
-            errorMessage = error.message || error.error || errorMessage;
-          } catch {
-            errorMessage = errorText || errorMessage;
-          }
-          console.error("❌ Article update error:", { status: response.status, body: errorText });
-          throw new Error(errorMessage);
-        }
-
-        toast({
-          title: "Éxito",
-          description: "Artículo actualizado",
-        });
-
-        setShowEditDialog(false);
-        setEditingArticle(null);
-        fetchArticles();
-        return;
-      }
-
-      // For new articles, use FormData with files
-      const articleData = {
-        title: formData.title.trim(),
-        excerpt: formData.excerpt?.trim() || "",
-        content: formData.content.trim(),
-        slug: formData.slug || formData.title.toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, ""),
-        authorId: safeParseInt(formData.authorId, 1),
-        categoryId: safeParseInt(formData.categoryId, 1),
-        categoryIds: JSON.stringify(formData.categoryIds.length > 0 ? formData.categoryIds.map(id => safeParseInt(id, 1)) : [1]),
-        published: formData.published ? "true" : "false",
-        isFeatured: formData.isFeatured ? "true" : "false",
-        isBreaking: formData.isBreaking ? "true" : "false",
-        featuredImage: formData.featuredImage?.trim() || "",
-        videoUrl: formData.videoUrl?.trim() || "",
-        provinceId: formData.provinceId ? safeParseInt(formData.provinceId, null) : "",
-      };
-      
-      // Send as form fields
-      Object.keys(articleData).forEach(key => {
-        const value = articleData[key as keyof typeof articleData];
-        if (value !== null && value !== undefined) {
-          formDataToSend.append(key, String(value));
-        }
-      });
-      
-      imageFiles.forEach((file) => {
-        formDataToSend.append("images", file);
-      });
-      
-      videoFiles.forEach((file) => {
-        formDataToSend.append("videos", file);
-      });
-
-      console.log("🔄 Saving article with data:", Object.fromEntries(formDataToSend.entries()));
-
-      const response = await fetch("/api/admin/articles", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formDataToSend,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = "Error al guardar artículo";
-        try {
-          const error = JSON.parse(errorText);
-          errorMessage = error.message || error.error || errorMessage;
-        } catch {
-          errorMessage = errorText || errorMessage;
-        }
-        console.error("❌ Article save error:", { 
-          status: response.status, 
-          body: errorText,
-          formData: Object.fromEntries(formDataToSend.entries())
-        });
-        throw new Error(errorMessage);
+        response = await api.put(
+          `/admin/articles/${editingArticle.article.id}`,
+          articleFormData
+        );
+      } else {
+        response = await api.post("/admin/articles", articleFormData);
       }
 
       toast({
         title: "Éxito",
-        description: "Artículo creado exitosamente",
+        description: `Artículo ${editingArticle ? "actualizado" : "creado"} correctamente.`,
       });
 
       setShowEditDialog(false);
       setEditingArticle(null);
-      fetchArticles();
+      fetchArticles(); // Refresh the list
     } catch (error: any) {
-      console.error("❌ Failed to save article:", error);
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido al guardar artículo";
       toast({
         title: "Error al guardar",
-        description: errorMessage,
+        description: error.message || "No se pudo guardar el artículo. Intente de nuevo.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -676,7 +538,9 @@ export default function AdminArticlesMinimalist() {
                     { value: "10", label: "Salud" },
                   ]}
                   value={formData.categoryIds}
-                  onChange={(value) => setFormData({ ...formData, categoryIds: value })}
+                  onChange={(values: string[]) =>
+                    setFormData({ ...formData, categoryIds: values })
+                  }
                   placeholder="Selecciona una o más categorías"
                 />
               </div>

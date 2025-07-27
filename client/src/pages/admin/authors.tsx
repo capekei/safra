@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useApiClient } from "@/lib/api";
 import { Plus, Edit, Trash2, Search, User } from "lucide-react";
 
 interface Author {
@@ -55,6 +56,7 @@ export default function AdminAuthors() {
   });
 
   const { toast } = useToast();
+  const api = useApiClient();
 
   useEffect(() => {
     fetchAuthors();
@@ -62,21 +64,9 @@ export default function AdminAuthors() {
 
   const fetchAuthors = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
       const params = new URLSearchParams();
       if (search) params.append("search", search);
-
-      const response = await fetch(`/api/admin/authors?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Error fetching authors");
-      }
-
-      const data = await response.json();
+      const data = await api.get(`/admin/authors?${params.toString()}`);
       setAuthors(data);
     } catch (error) {
       console.error("Error:", error);
@@ -92,41 +82,24 @@ export default function AdminAuthors() {
 
   const handleDelete = async (author: Author) => {
     try {
-      const token = localStorage.getItem("adminToken");
-      
-      // First check if author has articles
-      const checkResponse = await fetch(`/api/admin/authors/${author.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      await api.delete(`/admin/authors/${author.id}`);
+      toast({
+        title: "Éxito",
+        description: "Autor eliminado correctamente",
       });
-
-      if (!checkResponse.ok) {
-        const error = await checkResponse.json();
-        
-        // If author has articles, show dialog to reassign
-        if (error.availableAuthors && error.articleCount > 0) {
-          setDeletingAuthor(author);
-          setAvailableAuthors(error.availableAuthors);
-          setShowReassignDialog(true);
-          return;
-        } else {
-          throw new Error(error.message || "Error deleting author");
-        }
+      fetchAuthors();
+    } catch (error: any) {
+      if (error.response?.data?.availableAuthors) {
+        setDeletingAuthor(author);
+        setAvailableAuthors(error.response.data.availableAuthors);
+        setShowReassignDialog(true);
       } else {
         toast({
-          title: "Éxito",
-          description: "Autor eliminado correctamente",
+          title: "Error",
+          description: error.message || "No se pudo eliminar el autor",
+          variant: "destructive",
         });
-        fetchAuthors();
       }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo eliminar el autor",
-        variant: "destructive",
-      });
     }
   };
 
@@ -134,24 +107,11 @@ export default function AdminAuthors() {
     if (!reassignToAuthor || !deletingAuthor) return;
 
     try {
-      const token = localStorage.getItem("adminToken");
-      const deleteResponse = await fetch(`/api/admin/authors/${deletingAuthor.id}?reassignTo=${reassignToAuthor}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      if (!deleteResponse.ok) {
-        const deleteError = await deleteResponse.json();
-        throw new Error(deleteError.message || "Error deleting author");
-      }
-      
+      await api.delete(`/admin/authors/${deletingAuthor.id}?reassignTo=${reassignToAuthor}`);
       toast({
         title: "Éxito",
         description: `Autor eliminado y artículos reasignados correctamente`,
       });
-      
       setShowReassignDialog(false);
       setDeletingAuthor(null);
       setReassignToAuthor("");
@@ -187,29 +147,15 @@ export default function AdminAuthors() {
 
   const handleSaveAuthor = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const url = editingAuthor 
-        ? `/api/admin/authors/${editingAuthor.id}`
-        : "/api/admin/authors";
-      
-      const response = await fetch(url, {
-        method: editingAuthor ? "PUT" : "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Error saving author");
+      if (editingAuthor) {
+        await api.put(`/admin/authors/${editingAuthor.id}`, formData);
+      } else {
+        await api.post("/admin/authors", formData);
       }
-
       toast({
         title: "Éxito",
-        description: editingAuthor 
-          ? "Autor actualizado correctamente" 
+        description: editingAuthor
+          ? "Autor actualizado correctamente"
           : "Autor creado correctamente",
       });
 

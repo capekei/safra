@@ -1,9 +1,10 @@
 import { useState } from "react";
 import AdminLayout from "@/components/admin/admin-layout";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useApiClient } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+
 import {
   Table,
   TableBody,
@@ -49,7 +50,9 @@ interface Review {
 }
 
 export default function AdminReviews() {
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const api = useApiClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedRating, setSelectedRating] = useState("all");
@@ -60,24 +63,12 @@ export default function AdminReviews() {
   // Fetch reviews
   const { data: reviews, isLoading } = useQuery({
     queryKey: ["/api/admin/reviews", selectedStatus, selectedRating, searchTerm],
-    queryFn: async () => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(
-        `/api/admin/reviews?status=${selectedStatus}&rating=${selectedRating}&search=${searchTerm}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!response.ok) throw new Error("Failed to fetch reviews");
-      return response.json();
-    },
+    queryFn: () => api.get(`/admin/reviews?status=${selectedStatus}&rating=${selectedRating}&search=${searchTerm}`),
   });
 
   // Approve review mutation
   const approveMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("POST", `/api/admin/reviews/${id}/approve`),
+    mutationFn: (id: number) => api.post(`/api/admin/reviews/${id}/approve`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/reviews"] });
       toast({
@@ -98,7 +89,7 @@ export default function AdminReviews() {
   // Reject review mutation
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: number; reason: string }) =>
-      apiRequest("POST", `/api/admin/reviews/${id}/reject`, { reason }),
+      api.post(`/api/admin/reviews/${id}/reject`, { reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/reviews"] });
       toast({
@@ -120,7 +111,7 @@ export default function AdminReviews() {
 
   // Delete review mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("DELETE", `/api/admin/reviews/${id}`),
+    mutationFn: (id: number) => api.delete(`/api/admin/reviews/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/reviews"] });
       toast({

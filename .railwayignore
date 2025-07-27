@@ -1,0 +1,54 @@
+# Railway deployment ignore file for SafraReport Dominican marketplace
+
+# Development files
+.env
+.env.local
+.env.development
+
+# Node modules (will be installed during build)
+node_modules/
+
+# Development artifacts
+.vite/
+.cache/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# Task Master AI files (development only)
+.taskmaster/
+
+# Local uploads (use cloud storage in production)
+uploads/images/*
+uploads/videos/*
+
+# Keep essential files for deployment
+!uploads/.gitkeep
+
+# Git files
+.git/
+.gitignore
+
+# Documentation (not needed for deployment)
+*.md
+!README.md
+
+# Test files
+__tests__/
+*.test.*
+*.spec.*

@@ -1,0 +1,37 @@
+[build]
+# Build the Vite frontend and bundle the Express backend
+builder = "nixpacks"
+
+[deploy]
+# Start the production Express server
+startCommand = "npm run start"
+
+[env]
+# Railway environment variables
+NODE_ENV = "production"
+PORT = "$PORT"
+DATABASE_URL = "$DATABASE_URL"
+SESSION_SECRET = "$SESSION_SECRET"
+
+[[services]]
+# Web service configuration
+[services.web]
+# Build process: Vite frontend + Express backend bundle
+buildCommand = "npm install && npm run build"
+# Start the Express server serving both API and static files
+startCommand = "npm run start"
+# Health check endpoint
+healthcheckPath = "/api/health"
+# Dominican marketplace needs good performance
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[environments.production]
+# Production optimizations for SafraReport
+NODE_ENV = "production"
+# Ensure DATABASE_URL from Neon is used
+DATABASE_URL = "$DATABASE_URL"
+# Session security for user accounts
+SESSION_SECRET = "$SESSION_SECRET"
+# Railway's dynamic port
+PORT = "$PORT"

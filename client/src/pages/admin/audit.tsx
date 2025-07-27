@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AdminLayout from "@/components/admin/admin-layout";
 import { useQuery } from "@tanstack/react-query";
+import { useApiClient } from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -68,6 +69,7 @@ const actionIcons: Record<string, any> = {
 };
 
 export default function AdminAudit() {
+  const api = useApiClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAction, setSelectedAction] = useState("all");
   const [selectedEntity, setSelectedEntity] = useState("all");
@@ -77,8 +79,7 @@ export default function AdminAudit() {
   // Fetch audit logs
   const { data: logs, isLoading, refetch } = useQuery({
     queryKey: ["/api/admin/audit-logs", searchTerm, selectedAction, selectedEntity, selectedUser, dateRange],
-    queryFn: async () => {
-      const token = localStorage.getItem("adminToken");
+    queryFn: () => {
       const params = new URLSearchParams({
         search: searchTerm,
         action: selectedAction,
@@ -86,36 +87,22 @@ export default function AdminAudit() {
         user: selectedUser,
         dateRange: dateRange,
       });
-      
-      const response = await fetch(`/api/admin/audit-logs?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) throw new Error("Failed to fetch audit logs");
-      return response.json();
+      return api.get(`/admin/audit-logs?${params.toString()}`);
     },
   });
 
   // Export logs function
   const handleExport = async () => {
-    const token = localStorage.getItem("adminToken");
     const params = new URLSearchParams({
       search: searchTerm,
       action: selectedAction,
       entity: selectedEntity,
       user: selectedUser,
-      dateRange: dateRange,
       format: "csv",
     });
     
-    const response = await fetch(`/api/admin/audit-logs/export?${params}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    
-    if (response.ok) {
+    try {
+      const response = await api.raw(`/api/admin/audit-logs/export?${params}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -123,8 +110,9 @@ export default function AdminAudit() {
       a.download = `audit-logs-${format(new Date(), "yyyy-MM-dd")}.csv`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      a.remove();
+    } catch (error) {
+      console.error("Failed to export audit log", error);
     }
   };
 

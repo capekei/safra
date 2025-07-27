@@ -10,6 +10,31 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { NEWS_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
+import { ErrorBoundary } from "react-error-boundary";
+
+interface Article {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string;
+  featuredImage?: string;
+  publishedAt: string;
+  author: {
+    name: string;
+    avatar?: string;
+  };
+  category: {
+    name: string;
+    slug: string;
+  };
+}
+
+interface CategoryData {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+}
 
 export default function Category() {
   const { slug } = useParams();
@@ -23,12 +48,12 @@ export default function Category() {
     data: articles, 
     isLoading,
     error 
-  } = useQuery({
+  } = useQuery<Article[]>({
     queryKey: [articlesUrl],
     enabled: !!slug,
   });
 
-  const { data: categoryData } = useQuery({
+  const { data: categoryData } = useQuery<CategoryData>({
     queryKey: [`/api/categories/${slug}`],
     enabled: !!slug,
   });

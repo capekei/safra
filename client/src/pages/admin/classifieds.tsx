@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useApiClient } from "@/lib/api";
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,8 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Search, Eye, Trash2, CheckCircle, XCircle, MapPin, Phone, Calendar, Clock, Package, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
-import { apiRequest } from "@/lib/queryClient";
+
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -39,47 +39,26 @@ const CLASSIFIED_STATUS = [
 
 export default function AdminClassifieds() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const api = useApiClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedClassified, setSelectedClassified] = useState<any>(null);
 
-  // Check authentication
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/admin/check-auth', {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          setLocation('/admin/login');
-        }
-      } catch (error) {
-        setLocation('/admin/login');
-      }
-    };
-    checkAuth();
-  }, [setLocation]);
+
 
   // Fetch classifieds
   const { data: classifieds, isLoading } = useQuery({
     queryKey: ['/api/admin/classifieds', selectedCategory, selectedStatus, searchTerm],
-    queryFn: async () => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(`/api/admin/classifieds?category=${selectedCategory}&status=${selectedStatus}&search=${searchTerm}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) throw new Error('Failed to fetch classifieds');
-      return response.json();
-    }
+    queryFn: () =>
+      api.get(`/admin/classifieds?category=${selectedCategory}&status=${selectedStatus}&search=${searchTerm}`),
   });
 
   // Approve classified mutation
   const approveMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('POST', `/api/admin/classifieds/${id}/approve`),
+        mutationFn: (id: number) => api.post(`/admin/classifieds/${id}/approve`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/classifieds'] });
       toast({
@@ -99,8 +78,8 @@ export default function AdminClassifieds() {
 
   // Reject classified mutation
   const rejectMutation = useMutation({
-    mutationFn: ({ id, reason }: { id: number; reason: string }) => 
-      apiRequest('POST', `/api/admin/classifieds/${id}/reject`, { reason }),
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      api.post(`/admin/classifieds/${id}/reject`, { reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/classifieds'] });
       toast({
@@ -120,7 +99,7 @@ export default function AdminClassifieds() {
 
   // Delete classified mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/admin/classifieds/${id}`),
+    mutationFn: (id: number) => api.delete(`/admin/classifieds/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/classifieds'] });
       toast({

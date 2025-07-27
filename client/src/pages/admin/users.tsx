@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AdminLayout from "@/components/admin/admin-layout";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, QueryClient } from "@tanstack/react-query";
+import { useApiClient } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -48,13 +49,14 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface User {
-  id: number;
+  id: string;
   username: string;
   email: string;
-  role: "admin" | "editor" | "moderator" | "user";
-  active: boolean;
+  role: "admin" | "user" | "moderator";
+  status: "active" | "banned" | "pending";
   createdAt: string;
   lastLogin: string | null;
+  balance: number;
   stats?: {
     articles: number;
     classifieds: number;
@@ -62,116 +64,121 @@ interface User {
   };
 }
 
+interface CreateUserFormData {
+  username: string;
+  email: string;
+  password?: string;
+  role: User["role"];
+}
+
+interface ApiError {
+  message: string;
+}
+
 export default function AdminUsers() {
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRole, setSelectedRole] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [selectedRole, setSelectedRole] = useState<User["role"]>("user");
+  const [selectedStatus, setSelectedStatus] = useState<User["status"]>("active");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [formData, setFormData] = useState({
+  const [showCreateDialog, setShowCreateDialog] = useState<boolean>(false);
+  const [showEditDialog, setShowEditDialog] = useState<boolean>(false);
+
+  const [formData, setFormData] = useState<CreateUserFormData>({
     username: "",
     email: "",
     password: "",
-    role: "user" as User["role"],
+    role: "user",
   });
 
   // Fetch users
-  const { data: users, isLoading } = useQuery({
-    queryKey: ["/api/admin/users", selectedRole, selectedStatus, searchTerm],
+  const { data: users, isLoading, error: usersError } = useQuery<User[], ApiError>({
+    queryKey: ["admin-users", { role: selectedRole, status: selectedStatus, search: searchTerm }],
     queryFn: async () => {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(
-        `/api/admin/users?role=${selectedRole}&status=${selectedStatus}&search=${searchTerm}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!response.ok) throw new Error("Failed to fetch users");
-      return response.json();
+      const params = new URLSearchParams();
+      if (selectedRole !== "user") params.append("role", selectedRole);
+      if (selectedStatus !== "active") params.append("status", selectedStatus);
+      if (searchTerm) params.append("search", searchTerm);
+      return api.get(`/admin/users?${params.toString()}`);
     },
   });
 
   // Create user mutation
-  const createMutation = useMutation({
-    mutationFn: (data: typeof formData) => apiRequest("POST", "/api/admin/users", data),
+  const createMutation = useMutation<User, ApiError, CreateUserFormData>({
+    mutationFn: (data: CreateUserFormData) => api.post("/admin/users", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast({
-        title: "Usuario creado",
-        description: "El usuario ha sido creado exitosamente.",
+        title: "Usuario Creado",
+        description: "El nuevo usuario ha sido creado exitosamente.",
+        variant: "default",
       });
       setShowCreateDialog(false);
-      resetForm();
+      setFormData({
+        username: "",
+        email: "",
+        password: "",
+        role: "user",
+      });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
-        title: "Error",
-        description: "No se pudo crear el usuario.",
+        title: "Error al Crear Usuario",
+        description: error?.message || "Ocurrió un error inesperado. Por favor, intente de nuevo.",
         variant: "destructive",
       });
     },
   });
 
   // Update user mutation
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<User> }) =>
-      apiRequest("PATCH", `/api/admin/users/${id}`, data),
+  const updateMutation = useMutation<User, ApiError, Partial<CreateUserFormData>>({
+    mutationFn: (data: Partial<CreateUserFormData>) => api.put(`/admin/users/${selectedUser?.id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast({
-        title: "Usuario actualizado",
+        title: "Usuario Actualizado",
         description: "Los datos del usuario han sido actualizados.",
+        variant: "default",
       });
       setShowEditDialog(false);
       setSelectedUser(null);
     },
-    onError: () => {
+    onError: (error) => {
       toast({
-        title: "Error",
-        description: "No se pudo actualizar el usuario.",
+        title: "Error al Actualizar",
+        description: error?.message || "No se pudo actualizar el usuario. Verifique los datos e intente de nuevo.",
         variant: "destructive",
       });
     },
   });
 
   // Delete user mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("DELETE", `/api/admin/users/${id}`),
+  const deleteMutation = useMutation<void, ApiError, string>({
+    mutationFn: (userId: string) => api.delete(`/admin/users/${userId}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast({
-        title: "Usuario eliminado",
+        title: "Usuario Eliminado",
         description: "El usuario ha sido eliminado permanentemente.",
+        variant: "default",
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar el usuario.",
+        title: "Error al Eliminar",
+        description: error?.message || "No se pudo eliminar el usuario. Por favor, intente de nuevo.",
         variant: "destructive",
       });
     },
   });
 
-  const resetForm = () => {
-    setFormData({
-      username: "",
-      email: "",
-      password: "",
-      role: "user",
-    });
-  };
-
   const getRoleBadgeVariant = (role: User["role"]) => {
     switch (role) {
       case "admin":
         return "destructive";
-      case "editor":
-        return "default";
       case "moderator":
         return "secondary";
       default:
@@ -183,8 +190,6 @@ export default function AdminUsers() {
     switch (role) {
       case "admin":
         return "Administrador";
-      case "editor":
-        return "Editor";
       case "moderator":
         return "Moderador";
       default:
@@ -202,8 +207,8 @@ export default function AdminUsers() {
               Administra usuarios, roles y permisos
             </p>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
+          <Button onClick={() => setShowCreateDialog(true)} className="bg-green-600 hover:bg-green-700 text-white">
+            <UserPlus className="mr-2 h-4 w-4" />
             Crear Usuario
           </Button>
         </div>
@@ -233,30 +238,28 @@ export default function AdminUsers() {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Rol</label>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as "user" | "admin" | "moderator")}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="admin">Administradores</SelectItem>
-                    <SelectItem value="editor">Editores</SelectItem>
-                    <SelectItem value="moderator">Moderadores</SelectItem>
                     <SelectItem value="user">Usuarios</SelectItem>
+                    <SelectItem value="moderator">Moderadores</SelectItem>
+                    <SelectItem value="admin">Administradores</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Estado</label>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as "active" | "banned" | "pending")}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="active">Activos</SelectItem>
-                    <SelectItem value="inactive">Inactivos</SelectItem>
+                    <SelectItem value="banned">Baneados</SelectItem>
+                    <SelectItem value="pending">Pendientes</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -273,66 +276,48 @@ export default function AdminUsers() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="hidden md:table-cell">ID</TableHead>
                     <TableHead>Usuario</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead className="hidden sm:table-cell">Email</TableHead>
                     <TableHead>Rol</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>Actividad</TableHead>
-                    <TableHead>Registro</TableHead>
+                    <TableHead className="hidden lg:table-cell">Balance</TableHead>
+                    <TableHead className="hidden lg:table-cell">Creado</TableHead>
+                    <TableHead className="hidden xl:table-cell">Último Login</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users?.map((user: User) => (
                     <TableRow key={user.id}>
+                      <TableCell className="hidden md:table-cell">{user.id}</TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-gray-400" />
                           {user.username}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-gray-400" />
-                          {user.email}
-                        </div>
-                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
                       <TableCell>
                         <Badge variant={getRoleBadgeVariant(user.role)}>
-                          <Shield className="h-3 w-3 mr-1" />
                           {getRoleLabel(user.role)}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.active ? "default" : "secondary"}>
-                          {user.active ? "Activo" : "Inactivo"}
+                        <Badge variant={user.status === "active" ? "default" : "destructive"}>
+                          {user.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {user.stats && (
-                          <div className="text-sm text-gray-600">
-                            {user.stats.articles} arts, {user.stats.classifieds} clas,{" "}
-                            {user.stats.reviews} res
-                          </div>
-                        )}
+                      <TableCell className="hidden lg:table-cell">
+                        {new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(user.balance || 0)}
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(user.createdAt), "dd MMM yyyy", {
-                              locale: es,
-                            })}
-                          </div>
-                          {user.lastLogin && (
-                            <div className="text-gray-500 flex items-center gap-1 mt-1">
-                              <Activity className="h-3 w-3" />
-                              {format(new Date(user.lastLogin), "dd MMM HH:mm", {
-                                locale: es,
-                              })}
-                            </div>
-                          )}
-                        </div>
+                      <TableCell className="hidden lg:table-cell">
+                        {format(new Date(user.createdAt), "PPpp", { locale: es })}
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell">
+                        {user.lastLogin
+                          ? format(new Date(user.lastLogin), "PPpp", { locale: es })
+                          : "Nunca"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -442,7 +427,6 @@ export default function AdminUsers() {
                   <SelectContent>
                     <SelectItem value="user">Usuario</SelectItem>
                     <SelectItem value="moderator">Moderador</SelectItem>
-                    <SelectItem value="editor">Editor</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
                   </SelectContent>
                 </Select>
@@ -460,6 +444,7 @@ export default function AdminUsers() {
                   !formData.password ||
                   createMutation.isPending
                 }
+                className="bg-green-600 hover:bg-green-700 text-white"
               >
                 {createMutation.isPending ? "Creando..." : "Crear Usuario"}
               </Button>
@@ -522,7 +507,6 @@ export default function AdminUsers() {
                   <SelectContent>
                     <SelectItem value="user">Usuario</SelectItem>
                     <SelectItem value="moderator">Moderador</SelectItem>
-                    <SelectItem value="editor">Editor</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
                   </SelectContent>
                 </Select>
@@ -541,21 +525,16 @@ export default function AdminUsers() {
               <Button
                 onClick={() => {
                   if (selectedUser) {
-                    const updateData: any = {
-                      username: formData.username,
-                      email: formData.email,
-                      role: formData.role,
-                    };
-                    if (formData.password) {
-                      updateData.password = formData.password;
+                    const { password, ...rest } = formData;
+                    const updateData: Partial<CreateUserFormData> = { ...rest };
+                    if (password) {
+                      updateData.password = password;
                     }
-                    updateMutation.mutate({
-                      id: selectedUser.id,
-                      data: updateData,
-                    });
+                    updateMutation.mutate(updateData);
                   }
                 }}
                 disabled={!formData.username || !formData.email || updateMutation.isPending}
+                className="bg-green-600 hover:bg-green-700 text-white"
               >
                 {updateMutation.isPending ? "Guardando..." : "Guardar Cambios"}
               </Button>

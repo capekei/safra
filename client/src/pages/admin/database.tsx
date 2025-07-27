@@ -22,6 +22,7 @@ import {
   Table,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useApiClient } from "@/lib/api";
 
 interface TableInfo {
   tableName: string;
@@ -42,6 +43,7 @@ export default function AdminDatabase() {
   const [showMigrationDialog, setShowMigrationDialog] = useState(false);
   const [showBackupDialog, setShowBackupDialog] = useState(false);
   const { toast } = useToast();
+  const api = useApiClient();
 
   useEffect(() => {
     fetchDatabaseInfo();
@@ -49,18 +51,7 @@ export default function AdminDatabase() {
 
   const fetchDatabaseInfo = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/database/info", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Error fetching database info");
-      }
-
-      const data = await response.json();
+      const data = await api.get("/admin/database/info");
       setTables(data.tables);
     } catch (error) {
       console.error("Error:", error);
@@ -86,22 +77,7 @@ export default function AdminDatabase() {
 
     setQueryLoading(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/database/query", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query: sqlQuery }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Error executing query");
-      }
-
-      const result = await response.json();
+      const result = await api.post("/admin/database/query", { query: sqlQuery });
       setQueryResult(result);
       
       toast({
@@ -121,17 +97,7 @@ export default function AdminDatabase() {
 
   const runMigrations = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/database/migrate", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Error running migrations");
-      }
+      await api.post("/admin/database/migrate", {});
 
       toast({
         title: "Éxito",
@@ -151,30 +117,19 @@ export default function AdminDatabase() {
 
   const exportDatabase = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch("/api/admin/database/export", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Error exporting database");
-      }
-
+      const response = await api.raw("/admin/database/export");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `safrareport-backup-${new Date().toISOString().split("T")[0]}.json`;
+      a.download = `safra_report_backup_${new Date().toISOString()}.json`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      a.remove();
 
       toast({
         title: "Éxito",
-        description: "Base de datos exportada correctamente",
+        description: "La exportación de la base de datos ha comenzado",
       });
     } catch (error) {
       toast({

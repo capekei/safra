@@ -26,6 +26,32 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, X, Bell, Mail, Smartphone } from "lucide-react";
+import { ErrorBoundary } from "react-error-boundary";
+
+// Category interface
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  description?: string;
+  createdAt: string;
+}
+
+// User Preferences interface
+interface UserPreferences {
+  id: number;
+  userId: string;
+  categories: string[];
+  keywords: string[];
+  notifications: {
+    breaking: boolean;
+    daily: boolean;
+    weekly: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
 const preferencesSchema = z.object({
   categories: z.array(z.string()).min(1, "Selecciona al menos una categoría"),
@@ -59,12 +85,12 @@ export default function NewsPreferences() {
   }, [isAuthenticated, authLoading, toast]);
 
   // Fetch categories
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
 
   // Fetch user preferences
-  const { data: preferences, isLoading: preferencesLoading } = useQuery({
+  const { data: preferences, isLoading: preferencesLoading } = useQuery<UserPreferences>({
     queryKey: ['/api/user/preferences'],
     enabled: isAuthenticated,
   });
@@ -100,10 +126,7 @@ export default function NewsPreferences() {
   // Submit mutation
   const submitMutation = useMutation({
     mutationFn: async (data: PreferencesForm) => {
-      return apiRequest("/api/user/preferences", {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("PUT", "/api/user/preferences", data);
     },
     onSuccess: () => {
       toast({

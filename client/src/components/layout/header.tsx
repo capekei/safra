@@ -16,10 +16,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NEWS_CATEGORIES } from "@/lib/constants";
+import { MobileBottomNav } from "@/components/layout/mobile-nav";
 
 export function Header() {
   const [location] = useLocation();
   const [language, setLanguage] = useState("ES");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleLanguage = () => {
     const newLang = language === "ES" ? "EN" : "ES";
@@ -136,10 +138,12 @@ export function Header() {
           variant="ghost" 
           size="sm"
           className="mobile-nav md:hidden text-gray-700"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           <Menu className="h-6 w-6" />
         </Button>
       </div>
+      {isMobileMenuOpen && <MobileBottomNav />}
     </header>
   );
 }

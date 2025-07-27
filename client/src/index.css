@@ -13,24 +13,24 @@
   --card-foreground: hsl(0, 0%, 10%);
   --border: hsl(214, 32%, 91%);
   --input: hsl(214, 32%, 91%);
-  --primary: hsl(120, 100%, 50%);
-  --primary-foreground: hsl(0, 0%, 10%);
-  --secondary: hsl(210, 40%, 95%);
-  --secondary-foreground: hsl(222, 84%, 4.9%);
-  --accent: hsl(210, 40%, 95%);
-  --accent-foreground: hsl(222, 84%, 4.9%);
+  --primary: hsl(120, 100%, 50%); /* #00ff00 */
+  --primary-foreground: hsl(0, 0%, 0%);
+  --secondary: hsl(120, 100%, 97%);
+  --secondary-foreground: hsl(120, 100%, 20%);
+  --accent: hsl(120, 100%, 95%);
+  --accent-foreground: hsl(120, 100%, 25%);
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(210, 40%, 98%);
   --ring: hsl(0, 0%, 10%);
   --radius: 0.5rem;
 
-  /* Liquid Glass custom properties */
-  --glass-background: hsla(0, 0%, 100%, 0.9);
-  --glass-border: hsla(0, 0%, 100%, 0.3);
-  --glass-shadow: hsla(0, 0%, 0%, 0.08);
-  --glass-card-background: hsla(0, 0%, 100%, 0.85);
-  --glass-card-border: hsla(0, 0%, 100%, 0.2);
-  --glass-card-shadow: hsla(0, 0%, 0%, 0.06);
+  /* Liquid Glass custom properties - Light Frost Green */
+  --glass-background: hsla(120, 100%, 98%, 0.9);
+  --glass-border: hsla(120, 100%, 50%, 0.3);
+  --glass-shadow: hsla(120, 100%, 30%, 0.08);
+  --glass-card-background: hsla(120, 100%, 99%, 0.85);
+  --glass-card-border: hsla(120, 100%, 50%, 0.2);
+  --glass-card-shadow: hsla(120, 100%, 30%, 0.06);
 }
 
 @layer base {

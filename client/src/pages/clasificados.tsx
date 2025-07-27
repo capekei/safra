@@ -13,6 +13,36 @@ import { CLASSIFIED_CATEGORIES } from "@/lib/constants";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { ErrorBoundary } from "react-error-boundary";
+
+interface Classified {
+  id: number;
+  title: string;
+  description: string;
+  price?: number;
+  currency: string;
+  images: string[];
+  contactName: string;
+  contactPhone: string;
+  contactWhatsapp?: string;
+  contactEmail?: string;
+  municipality?: string;
+  province?: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+    icon: string;
+  };
+  createdAt: string;
+  expiresAt: string;
+  featured: boolean;
+  active: boolean;
+}
 
 export default function Clasificados() {
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
@@ -25,7 +55,7 @@ export default function Clasificados() {
     data: classifieds, 
     isLoading,
     error 
-  } = useQuery({
+  } = useQuery<Classified[]>({
     queryKey: [clasificadosUrl],
   });
 

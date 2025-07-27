@@ -5,7 +5,7 @@ import { z } from "zod";
 import adminRoutes from "./admin-routes";
 import adminAccessRoutes from "./admin-access";
 import adminArticlesFix from "./admin-articles-fix";
-import unifiedAuthRoutes from "./unified-auth";
+import supabaseAuthRoutes from "./supabase-auth";
 import userRoutes from "./user-routes";
 import { db } from "./db";
 import { articles, categories, classifieds, businesses, classifiedCategories, businessCategories, provinces } from "@shared/schema";
@@ -13,8 +13,8 @@ import { eq, desc, sql } from "drizzle-orm";
 import { setupAuth, isAuthenticated } from "./replit-auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Mount unified auth routes first
-  app.use("/", unifiedAuthRoutes);
+  // Mount Supabase auth routes first
+  app.use("/", supabaseAuthRoutes);
   
   // Auth middleware (this sets up Replit Auth but shouldn't override our routes)
   // await setupAuth(app);
@@ -352,7 +352,7 @@ Sitemap: ${baseUrl}/api/sitemap.xml`;
   
   // Register author routes
   import("./author-routes").then(({ registerAuthorRoutes }) => {
-    registerAuthorRoutes(app, storage);
+    registerAuthorRoutes(app, storage as any);
   });
   
   // Special admin access route

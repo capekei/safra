@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { apiRequest } from "@/lib/queryClient";
+import { useApiClient } from "@/lib/api";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -49,31 +49,37 @@ export default function AdminAds() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<any>(null);
   const { toast } = useToast();
+  const api = useApiClient();
+  const queryClient = useQueryClient();
 
   // Fetch ads
   const { data: adsData, isLoading: isLoadingAds } = useQuery({
     queryKey: ["/api/admin/ads", selectedPlacements, searchQuery, selectedStatus],
     queryFn: () =>
-      apiRequest(`/api/admin/ads?placement=${selectedPlacements}&search=${searchQuery}&status=${selectedStatus}`),
+      api.get(`/admin/ads?placement=${selectedPlacements}&search=${searchQuery}&status=${selectedStatus}`),
   });
 
   // Fetch placements
   const { data: placements } = useQuery({
     queryKey: ["/api/admin/ads/placements"],
+    queryFn: () => api.get("/admin/ads/placements"),
   });
 
   // Fetch provinces and categories for targeting
   const { data: provinces } = useQuery({
     queryKey: ["/api/admin/provinces"],
+    queryFn: () => api.get("/admin/provinces"),
   });
 
   const { data: categories } = useQuery({
     queryKey: ["/api/admin/categories"],
+    queryFn: () => api.get("/api/admin/categories"),
   });
 
   // Analytics stats
   const { data: stats } = useQuery({
     queryKey: ["/api/admin/ads/stats"],
+    queryFn: () => api.get("/api/admin/ads/stats"),
   });
 
   const form = useForm<AdFormData>({
@@ -94,22 +100,20 @@ export default function AdminAds() {
 
   // Create/Update ad mutation
   const createAdMutation = useMutation({
-    mutationFn: async (data: AdFormData) => {
-      const url = editingAd 
-        ? `/api/admin/ads/${editingAd.id}`
-        : "/api/admin/ads";
-      
-      return apiRequest(url, {
-        method: editingAd ? "PATCH" : "POST",
-        body: JSON.stringify(data),
-      });
+    mutationFn: (data: AdFormData) => {
+      if (editingAd) {
+        return api.put(`/admin/ads/${editingAd.id}`, data);
+      }
+      return api.post("/admin/ads", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ads/stats"] });
       toast({
-        title: editingAd ? "Anuncio actualizado" : "Anuncio creado",
-        description: `El anuncio ha sido ${editingAd ? "actualizado" : "creado"} exitosamente`,
+        title: "Éxito",
+        description: editingAd
+          ? "Anuncio actualizado correctamente"
+          : "Anuncio creado correctamente",
       });
       setIsCreateDialogOpen(false);
       setEditingAd(null);
@@ -126,11 +130,7 @@ export default function AdminAds() {
 
   // Delete ad mutation
   const deleteAdMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest(`/api/admin/ads/${id}`, {
-        method: "DELETE",
-      });
-    },
+    mutationFn: (id: number) => api.delete(`/admin/ads/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ads/stats"] });

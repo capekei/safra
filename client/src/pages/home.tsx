@@ -53,18 +53,18 @@ export default function Home() {
   }, [featuredError, toast]);
 
   // Fetch regular articles with deployment-specific configuration
-  const articlesUrl = `/api/articles?limit=20&offset=${page * 20}${activeCategory ? `&category=${activeCategory}` : ''}`;
   const { 
     data: articles, 
     isLoading: isLoadingArticles,
     error: articlesError 
   } = useQuery<ArticleWithRelations[]>({
-    queryKey: [articlesUrl],
+    queryKey: ['/api/articles', page, activeCategory],
     queryFn: () => {
+      const articlesUrl = `/api/articles?limit=20&offset=${page * 20}${activeCategory ? `&category=${activeCategory}` : ''}`;
       // Use VITE_API_BASE_URL for deployment compatibility
       const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
       const fullUrl = `${baseUrl}${articlesUrl}`;
-      
+
       console.log("🌐 Deploy fetch URL:", fullUrl);
       console.log("🔍 Environment check:", {
         mode: import.meta.env.MODE,

@@ -2,6 +2,45 @@ import { useState, useEffect } from "react";
 import { Fuel, Cloud, CloudRain, Sun, CloudSnow, Wind, Droplets } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { ErrorBoundary } from "react-error-boundary";
+
+// Type definitions
+interface ExchangeRates {
+  usd: { rate: number; trend: 'up' | 'down' };
+  eur: { rate: number; trend: 'up' | 'down' };
+}
+
+interface FuelPrices {
+  gasolina95: number;
+  gasolinaRegular: number;
+  gasoil: number;
+  glp: number;
+  lastUpdated?: string;
+}
+
+interface WeatherData {
+  condition: {
+    icon: string;
+    text: string;
+    code: number;
+    description: string;
+  };
+  location: {
+    name: string;
+    region: string;
+  };
+  temp: {
+    c: number;
+    f: number;
+  };
+  humidity: number;
+  wind: {
+    kph: number;
+    dir: string;
+  };
+  uv: number;
+  lastUpdated: string;
+}
 
 // Refined Liquid Glass Card Component
 function MinimalGlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -36,25 +75,35 @@ function MinimalGlassCard({ children, className = "" }: { children: React.ReactN
 // Minimalist Fuel Prices Card
 function FuelPricesCard() {
   // Fetch fuel prices with auto-refresh every 5 minutes
-  const { data: fuelData, isLoading: fuelLoading } = useQuery({
+  const { data: fuelData, isLoading: fuelLoading, error: fuelError } = useQuery<FuelPrices>({
     queryKey: ['/api/fuel-prices'],
     refetchInterval: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch exchange rates with auto-refresh every 5 minutes
-  const { data: exchangeData, isLoading: exchangeLoading } = useQuery({
+  const { data: exchangeData, isLoading: exchangeLoading, error: exchangeError } = useQuery<ExchangeRates>({
     queryKey: ['/api/exchange-rates'],
     refetchInterval: 5 * 60 * 1000, // 5 minutes
   });
 
-  const prices = fuelData || {
+  // Handle errors with Spanish messages
+  useEffect(() => {
+    if (fuelError) {
+      console.error('Error cargando precios de combustible:', fuelError);
+    }
+    if (exchangeError) {
+      console.error('Error cargando tasas de cambio:', exchangeError);
+    }
+  }, [fuelError, exchangeError]);
+
+  const prices: FuelPrices = fuelData || {
     gasolina95: 293.60,
     gasolinaRegular: 274.50,
     gasoil: 221.60,
     glp: 147.60
   };
 
-  const exchangeRates = exchangeData || {
+  const exchangeRates: ExchangeRates = exchangeData || {
     usd: { rate: 60.45, trend: 'up' },
     eur: { rate: 63.28, trend: 'down' }
   };
@@ -144,25 +193,35 @@ function FuelPricesCard() {
 // Minimalist Weather Card
 function WeatherCard() {
   // Fetch weather data with auto-refresh every 10 minutes
-  const { data: weatherData, isLoading } = useQuery({
+  const { data: weatherData, isLoading, error } = useQuery<WeatherData>({
     queryKey: ['/api/weather'],
     refetchInterval: 10 * 60 * 1000, // 10 minutes
   });
 
-  const weather = weatherData || {
-    temp: 28,
-    feelsLike: 32,
-    condition: 'partly-cloudy',
+  // Handle errors with Spanish messages
+  useEffect(() => {
+    if (error) {
+      console.error('Error cargando datos del clima:', error);
+    }
+  }, [error]);
+
+  const weather: WeatherData = weatherData || {
+    temp: { c: 28, f: 82 },
+    condition: {
+      icon: 'partly-cloudy',
+      text: 'Parcialmente nublado', 
+      code: 1003,
+      description: 'Parcialmente nublado'
+    },
     humidity: 75,
-    wind: 15,
-    location: 'Santo Domingo',
-    description: 'Parcialmente nublado',
+    wind: { kph: 15, dir: 'E' },
+    location: { name: 'Santo Domingo', region: 'Distrito Nacional' },
     uv: 8,
-    pressure: 1013
+    lastUpdated: new Date().toISOString()
   };
 
   const getWeatherIcon = () => {
-    switch (weather.condition) {
+    switch (weather.condition.icon) {
       case 'sunny': return <Sun className="w-6 h-6 text-yellow-500" />;
       case 'rainy': return <CloudRain className="w-6 h-6 text-blue-500" />;
       case 'cloudy': return <Cloud className="w-6 h-6 text-gray-500" />;
@@ -179,7 +238,7 @@ function WeatherCard() {
           <h3 className="text-sm font-medium text-gray-900">Clima</h3>
           {getWeatherIcon()}
         </div>
-        <p className="text-xs text-gray-500 mt-0.5">{weather.location}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{weather.location.name}</p>
       </div>
       
       {/* Temperature - Large and Clean */}
@@ -191,12 +250,9 @@ function WeatherCard() {
           </div>
         ) : (
           <>
-            <div className="text-4xl font-light text-gray-900">{weather.temp}°</div>
+            <div className="text-4xl font-light text-gray-900">{weather.temp.c}°</div>
             <div className="text-sm text-gray-500 mt-1">
-              {weather.condition === 'sunny' ? 'Soleado' :
-               weather.condition === 'partly-cloudy' ? 'Parcialmente nublado' :
-               weather.condition === 'cloudy' ? 'Nublado' :
-               weather.condition === 'rainy' ? 'Lluvioso' : weather.description}
+              {weather.condition.text || weather.condition.description}
             </div>
           </>
         )}
@@ -220,7 +276,7 @@ function WeatherCard() {
             {isLoading ? (
               <span className="inline-block w-12 h-3 bg-gray-200 rounded animate-pulse" />
             ) : (
-              `${weather.wind} km/h`
+              `${weather.wind.kph} km/h`
             )}
           </div>
         </div>
@@ -254,9 +310,46 @@ function WeatherCard() {
 // Minimalist Main Sidebar Component
 export function MainSidebar() {
   return (
-    <div className="space-y-4">
-      <FuelPricesCard />
-      <WeatherCard />
-    </div>
+    <ErrorBoundary
+      fallback={
+        <div className="space-y-4">
+          <MinimalGlassCard>
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-500">Error cargando información</p>
+              <p className="text-xs text-gray-400 mt-1">Intenta recargar la página</p>
+            </div>
+          </MinimalGlassCard>
+        </div>
+      }
+      onError={(error) => console.error('Error en sidebar:', error)}
+    >
+      <div className="space-y-4">
+        <ErrorBoundary
+          fallback={
+            <MinimalGlassCard>
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500">Error cargando precios</p>
+              </div>
+            </MinimalGlassCard>
+          }
+          onError={(error) => console.error('Error en precios:', error)}
+        >
+          <FuelPricesCard />
+        </ErrorBoundary>
+        
+        <ErrorBoundary
+          fallback={
+            <MinimalGlassCard>
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500">Error cargando clima</p>
+              </div>
+            </MinimalGlassCard>
+          }
+          onError={(error) => console.error('Error en clima:', error)}
+        >
+          <WeatherCard />
+        </ErrorBoundary>
+      </div>
+    </ErrorBoundary>
   );
 }
