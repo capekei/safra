@@ -15,13 +15,18 @@ Render will detect the `render.yaml` file and automatically:
 - ✅ Connect to your Supabase database
 - ✅ Generate secure secrets
 
-### Step 3: Supabase Variables (Auto-Configured!)
-✅ **No manual setup needed!** Your Supabase credentials are already configured in `render.yaml`:
+### Step 3: Supabase Authentication Setup
+✅ **Basic authentication configured!** Your Supabase credentials are in `render.yaml`:
 
 ```bash
 VITE_SUPABASE_URL=https://qolgaptebconzwwgjagm.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
+
+**⚠️ Manual Step Required:** Add your Supabase Service Role Key:
+1. Go to your Render dashboard → Environment
+2. Add environment variable: `SUPABASE_SERVICE_ROLE_KEY`
+3. Get the key from your Supabase project settings → API → Service Role
 
 ### Step 4: Deploy
 - Render automatically deploys on every git push

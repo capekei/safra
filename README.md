@@ -125,16 +125,21 @@ PORT=5000
 
 ## Deployment
 
-### Replit Deployment (Recommended)
-1. Import project to Replit
-2. Configure DATABASE_URL secret
-3. Run `npm run build`
-4. Deploy using Replit Deployments
+### Render Deployment (Recommended)
+This project is optimized for Render deployment with Supabase PostgreSQL. 
 
-### Production Build
+For detailed deployment instructions, see [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md).
+
+**Quick Deploy:**
+1. Connect repository to Render
+2. Render auto-detects `render.yaml` 
+3. Automatic deployment with Supabase integration
+
+**Local Development:**
 ```bash
-npm run build
-npm start
+npm run dev    # Start development server
+npm run build  # Build for production
+npm start      # Start production server
 ```
 
 ## Features in Detail

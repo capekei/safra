@@ -6,51 +6,31 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Create mock client for development mode
-const createMockClient = () => ({
-  auth: {
-    signUp: () => Promise.resolve({ data: null, error: { message: 'Development mode' } }),
-    signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Development mode' } }),
-    getUser: () => Promise.resolve({ data: { user: null }, error: { message: 'Development mode' } }),
-    signOut: () => Promise.resolve({ error: null }),
-    resetPasswordForEmail: () => Promise.resolve({ error: null }),
-    exchangeCodeForSession: () => Promise.resolve({ data: null, error: { message: 'Development mode' } }),
-    admin: {
-      deleteUser: () => Promise.resolve({ error: null })
-    }
-  },
-  from: () => ({
-    select: () => ({
-      eq: () => ({
-        single: () => Promise.resolve({ data: null, error: { message: 'Development mode' } })
-      })
-    }),
-    insert: () => Promise.resolve({ data: null, error: { message: 'Development mode' } }),
-    update: () => Promise.resolve({ data: null, error: { message: 'Development mode' } })
-  })
-});
-
-// Initialize clients based on environment
-let supabaseClient: any;
-let supabaseAdminClient: any;
-
+// Validate required environment variables
 if (!supabaseUrl || !supabaseKey) {
-  console.warn('⚠️  Supabase variables not found, using mock client');
-  console.warn('   Expected: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
-  console.warn('   Using mock authentication for now');
-  supabaseClient = createMockClient();
-  supabaseAdminClient = createMockClient();
-} else {
-  // Production Supabase clients
-  supabaseClient = createClient(supabaseUrl, supabaseKey);
-  supabaseAdminClient = supabaseServiceKey 
-    ? createClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      })
-    : null;
+  throw new Error(
+    '❌ Missing Supabase configuration!\n' +
+    'Required environment variables:\n' +
+    '- VITE_SUPABASE_URL\n' +
+    '- VITE_SUPABASE_ANON_KEY\n' +
+    '- SUPABASE_SERVICE_ROLE_KEY (for admin operations)\n' +
+    'Check your render.yaml configuration.'
+  );
+}
+
+// Initialize Supabase clients
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+const supabaseAdminClient = supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null;
+
+if (!supabaseAdminClient) {
+  console.warn('⚠️  SUPABASE_SERVICE_ROLE_KEY not configured - admin operations will be limited');
 }
 
 // Export the clients
