@@ -27,19 +27,30 @@ export async function setupVite(app: Express, server: Server) {
     
     // Dynamic import for development-only dependencies
     const { createServer: createViteServer, createLogger } = await import("vite");
-    const viteConfig = await import("../vite.config.js");
     
     const viteLogger = createLogger();
     
-    const serverOptions = {
-      middlewareMode: true,
-      hmr: { server },
-      allowedHosts: true as const,
+    // Inline Vite config without dev-only plugins to avoid imports
+    const inlineViteConfig = {
+      resolve: {
+        alias: {
+          "@": path.resolve(import.meta.dirname, "..", "client", "src"),
+          "@shared": path.resolve(import.meta.dirname, "..", "shared"),
+          "@assets": path.resolve(import.meta.dirname, "..", "attached_assets"),
+        },
+      },
+      root: path.resolve(import.meta.dirname, "..", "client"),
+      server: {
+        middlewareMode: true,
+        hmr: { server },
+        allowedHosts: true as const,
+      },
+      appType: "custom" as const,
+      configFile: false,
     };
 
     const vite = await createViteServer({
-      ...viteConfig.default,
-      configFile: false,
+      ...inlineViteConfig,
       customLogger: {
         ...viteLogger,
         error: (msg, options) => {
@@ -51,8 +62,6 @@ export async function setupVite(app: Express, server: Server) {
           viteLogger.error(msg, options);
         },
       },
-      server: serverOptions,
-      appType: "custom",
     });
 
     console.log('✅ Vite server created successfully');
