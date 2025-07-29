@@ -19,6 +19,12 @@ export async function setupVite(app: Express, server: Server) {
   try {
     console.log('🔄 Setting up Vite middleware...');
     
+    // Skip Vite setup in production - should use serveStatic instead
+    if (process.env.NODE_ENV === 'production') {
+      console.log('⚠️  Production mode detected - skipping Vite middleware');
+      return;
+    }
+    
     // Dynamic import for development-only dependencies
     const { createServer: createViteServer, createLogger } = await import("vite");
     const viteConfig = await import("../vite.config.js");
