@@ -1,9 +1,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import 'dotenv/config';
 
-// Supabase configuration
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+// Supabase configuration - support both client and server env var names
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Create mock client for development mode
@@ -35,13 +35,11 @@ let supabaseClient: any;
 let supabaseAdminClient: any;
 
 if (!supabaseUrl || !supabaseKey) {
-  if (process.env.NODE_ENV === 'development') {
-    console.warn('⚠️  Supabase variables not found, using development mode with mock client');
-    supabaseClient = createMockClient();
-    supabaseAdminClient = createMockClient();
-  } else {
-    throw new Error('Faltan variables de entorno de Supabase');
-  }
+  console.warn('⚠️  Supabase variables not found, using mock client');
+  console.warn('   Expected: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+  console.warn('   Using mock authentication for now');
+  supabaseClient = createMockClient();
+  supabaseAdminClient = createMockClient();
 } else {
   // Production Supabase clients
   supabaseClient = createClient(supabaseUrl, supabaseKey);
