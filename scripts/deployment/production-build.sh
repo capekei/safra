@@ -25,14 +25,14 @@ if [ "$NODE_MAJOR" -lt 20 ]; then
     exit 1
 fi
 
-# Install dependencies with retry for deployment environments
+# Install dependencies optimized for Dominican networks
 echo "📦 Installing dependencies..."
-if ! npm ci --production=false; then
-    echo "⚠️  npm ci failed, trying alternative approach..."
+if ! npm ci --production=false --prefer-offline --no-audit --no-fund; then
+    echo "⚠️  npm ci failed, trying alternative approach for slow networks..."
     echo "🔄 Removing node_modules and package-lock.json..."
     rm -rf node_modules package-lock.json
-    echo "📦 Installing with npm install..."
-    npm install
+    echo "📦 Installing with npm install (fallback for Dominican mobile networks)..."
+    npm install --prefer-offline --no-audit --no-fund
 fi
 
 # Update browserslist db

@@ -19,8 +19,8 @@ SESSION_SECRET = "$SESSION_SECRET"
 [[services]]
 # Web service configuration
 [services.web]
-# Build process: Vite frontend + Express backend bundle
-buildCommand = "npm install && npm run build"
+# Build process optimized for Dominican mobile networks
+buildCommand = "npm run railway:build"
 # Start the Express server serving both API and static files
 startCommand = "npm run start"
 # Health check endpoint

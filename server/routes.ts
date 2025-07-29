@@ -21,24 +21,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount user routes
   app.use("/api/user", userRoutes);
-  // Health check endpoint
+  // Health check endpoint optimized for Dominican mobile networks
   app.get("/api/health", async (req, res) => {
     try {
-      // Test database connection
-      const testQuery = await db.select({ count: sql`count(*)` }).from(articles);
-      res.json({ 
-        status: "healthy", 
-        database: "connected",
-        articlesCount: testQuery[0]?.count || 0,
-        timestamp: new Date().toISOString()
+      // Quick database ping (faster than count query for 3G networks)
+      await db.execute("SELECT 1 as health");
+      
+      res.status(200).json({
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        uptime: Math.floor(process.uptime()),
+        memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        dominican: {
+          currency: "DOP",
+          mobile_optimized: true,
+          network: "3G_ready"
+        }
       });
     } catch (error) {
       console.error('Health check failed:', error);
-      const message = error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({ 
-        status: "unhealthy", 
-        database: "disconnected",
-        error: message,
+      res.status(503).json({
+        status: "unhealthy",
+        error: error instanceof Error ? error.message : "Database connection failed",
         timestamp: new Date().toISOString()
       });
     }

@@ -18,7 +18,7 @@
     "prod:start": "NODE_ENV=production node dist/index.js",
     "deploy:build": "rm -rf node_modules package-lock.json && npm install && npm run build",
     "railway:dev": "railway run npm run dev",
-    "railway:build": "npm run build",
+    "railway:build": "npm ci --production=false --prefer-offline --no-audit --no-fund && npm run build",
     "check": "tsc",
     "lint": "npx tsc --noEmit",
     "audit:fix": "npm audit fix",
