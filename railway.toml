@@ -2,6 +2,9 @@
 # Build the Vite frontend and bundle the Express backend
 builder = "nixpacks"
 
+[build.nixpacksConfig]
+nodeVersion = "20"
+
 [deploy]
 # Start the production Express server
 startCommand = "npm run start"

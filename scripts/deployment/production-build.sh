@@ -17,6 +17,14 @@ fi
 NODE_VERSION=$(node --version)
 echo "📋 Node.js version: $NODE_VERSION"
 
+# Verify Node.js version is 20+
+NODE_MAJOR=$(echo $NODE_VERSION | cut -d. -f1 | sed 's/v//')
+if [ "$NODE_MAJOR" -lt 20 ]; then
+    echo "❌ Error: Node.js version 20+ required. Current: $NODE_VERSION"
+    echo "Please upgrade Node.js for Dominican marketplace compatibility"
+    exit 1
+fi
+
 # Install dependencies with retry for deployment environments
 echo "📦 Installing dependencies..."
 if ! npm ci --production=false; then
