@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install system dependencies for better performance on budget devices
+# Install system dependencies for better performance on budget devices  
 RUN apk add --no-cache \
     python3 \
     make \
@@ -14,9 +14,9 @@ RUN apk add --no-cache \
 COPY package*.json ./
 COPY .npmrc ./
 
-# Install dependencies with retries for slow networks
-RUN npm ci --production=false --prefer-offline || \
-    (rm -rf node_modules package-lock.json && npm install)
+# Fix package-lock.json sync issue and install dependencies
+RUN rm -f package-lock.json && \
+    npm install --prefer-offline --no-audit --no-fund
 
 # Copy source code
 COPY . .
