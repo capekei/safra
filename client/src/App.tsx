@@ -8,6 +8,7 @@ import { Suspense, Component, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import TestSimple from "@/pages/test-simple";
 import Article from "@/pages/article";
 import ArticlePreview from "@/pages/article-preview";
 import Category from "@/pages/category";
@@ -93,8 +94,15 @@ function RouteWithErrorBoundary({ component: Component, ...props }: any) {
 }
 
 function Router() {
+  console.log('🛣️ SafraReport Router: Initializing router');
+  
   return (
     <Switch>
+      {/* Test page */}
+      <Route path="/test">
+        <RouteWithErrorBoundary component={TestSimple} />
+      </Route>
+      
       {/* Home page */}
       <Route path="/">
         <RouteWithErrorBoundary component={Home} />
@@ -280,6 +288,8 @@ function DevAdminRoutes() {
 }
 
 function App() {
+  console.log('🎯 SafraReport App.tsx: Rendering main App component');
+  
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <QueryClientProvider client={queryClient}>

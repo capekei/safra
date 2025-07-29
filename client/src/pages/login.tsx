@@ -33,7 +33,7 @@ export default function Login() {
         description="Acceso seguro para usuarios de SafraReport. Inicia sesión o crea tu cuenta."
       />
       <Header />
-      <main className="flex-grow flex items-center justify-center py-12">
+      <main className="flex-grow flex items-center justify-center pt-28 pb-12">
         <div className="w-full lg:grid lg:max-w-5xl lg:grid-cols-2 xl:min-h-[600px]">
           <div className="flex items-center justify-center py-12 px-4">
             <SupabaseLoginForm onSuccess={handleLoginSuccess} />

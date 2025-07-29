@@ -6,9 +6,59 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Create mock client for development mode
+const createMockClient = () => ({
+  auth: {
+    signUp: () => Promise.resolve({ data: null, error: { message: 'Development mode' } }),
+    signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Development mode' } }),
+    getUser: () => Promise.resolve({ data: { user: null }, error: { message: 'Development mode' } }),
+    signOut: () => Promise.resolve({ error: null }),
+    resetPasswordForEmail: () => Promise.resolve({ error: null }),
+    exchangeCodeForSession: () => Promise.resolve({ data: null, error: { message: 'Development mode' } }),
+    admin: {
+      deleteUser: () => Promise.resolve({ error: null })
+    }
+  },
+  from: () => ({
+    select: () => ({
+      eq: () => ({
+        single: () => Promise.resolve({ data: null, error: { message: 'Development mode' } })
+      })
+    }),
+    insert: () => Promise.resolve({ data: null, error: { message: 'Development mode' } }),
+    update: () => Promise.resolve({ data: null, error: { message: 'Development mode' } })
+  })
+});
+
+// Initialize clients based on environment
+let supabaseClient: any;
+let supabaseAdminClient: any;
+
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Faltan variables de entorno de Supabase');
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('⚠️  Supabase variables not found, using development mode with mock client');
+    supabaseClient = createMockClient();
+    supabaseAdminClient = createMockClient();
+  } else {
+    throw new Error('Faltan variables de entorno de Supabase');
+  }
+} else {
+  // Production Supabase clients
+  supabaseClient = createClient(supabaseUrl, supabaseKey);
+  supabaseAdminClient = supabaseServiceKey 
+    ? createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      })
+    : null;
 }
+
+// Export the clients
+export const supabase = supabaseClient;
+export const supabaseAdmin = supabaseAdminClient;
+export type TypedSupabaseClient = SupabaseClient;
 
 // Database types for TypeScript
 export interface DatabaseUser {
@@ -91,19 +141,3 @@ export interface Database {
     };
   };
 }
-
-// Typed Supabase client
-export type TypedSupabaseClient = SupabaseClient<Database>;
-
-// Client for regular operations with proper typing
-export const supabase: TypedSupabaseClient = createClient<Database>(supabaseUrl, supabaseKey);
-
-// Admin client for service operations (user management, etc.)
-export const supabaseAdmin: TypedSupabaseClient | null = supabaseServiceKey 
-  ? createClient<Database>(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-  : null;

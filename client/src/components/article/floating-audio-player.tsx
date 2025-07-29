@@ -54,8 +54,12 @@ export function FloatingAudioPlayer({
         <Button
           variant="default"
           size="icon"
-          className="rounded-full shadow-lg bg-primary hover:bg-primary/90 w-14 h-14"
+          className={cn(
+            "rounded-full shadow-lg bg-primary hover:bg-primary/90 w-14 h-14 transition-all duration-150",
+            isPlaying && "motion-safe:animate-pulse"
+          )}
           onClick={() => setIsMinimized(false)}
+          aria-label="Expandir reproductor de audio"
         >
           <Volume2 className="h-6 w-6" />
         </Button>
@@ -87,8 +91,9 @@ export function FloatingAudioPlayer({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 hover:bg-gray-100 transition-colors duration-150"
             onClick={() => setIsMinimized(true)}
+            aria-label="Minimizar reproductor"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -96,10 +101,17 @@ export function FloatingAudioPlayer({
       </div>
 
       {/* Progress bar */}
-      <div className="mb-3">
-        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+      <div className="mb-3 space-y-1">
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>{isPaused ? 'Pausado' : isPlaying ? 'Reproduciendo' : 'Detenido'}</span>
+          <span>{Math.round(progress)}%</span>
+        </div>
+        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-300 ease-linear"
+            className={cn(
+              "h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-150 ease-out",
+              isPlaying && "motion-safe:animate-pulse"
+            )}
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -112,7 +124,8 @@ export function FloatingAudioPlayer({
             variant="default"
             size="icon"
             onClick={onPlay}
-            className="rounded-full bg-primary hover:bg-primary/90 h-10 w-10"
+            className="rounded-full bg-primary hover:bg-primary/90 h-10 w-10 transition-all duration-150 hover:scale-105"
+            aria-label={isPaused ? "Continuar reproducción" : "Iniciar reproducción"}
           >
             <Play className="h-5 w-5" />
           </Button>
@@ -121,7 +134,8 @@ export function FloatingAudioPlayer({
             variant="default"
             size="icon"
             onClick={onPause}
-            className="rounded-full bg-primary hover:bg-primary/90 h-10 w-10"
+            className="rounded-full bg-primary hover:bg-primary/90 h-10 w-10 transition-all duration-150 hover:scale-105"
+            aria-label="Pausar reproducción"
           >
             <Pause className="h-5 w-5" />
           </Button>
@@ -131,7 +145,8 @@ export function FloatingAudioPlayer({
           variant="outline"
           size="icon"
           onClick={onStop}
-          className="rounded-full h-10 w-10"
+          className="rounded-full h-10 w-10 border-primary/20 hover:border-primary/40 transition-all duration-150 hover:scale-105"
+          aria-label="Detener reproducción"
         >
           <RotateCcw className="h-5 w-5" />
         </Button>

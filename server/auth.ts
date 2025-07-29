@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { Request, Response, Express } from "express";
-import { storage } from "./storage";
+import { storage } from "./database/storage";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import session from "express-session";

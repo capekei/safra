@@ -15,6 +15,8 @@ import { MainSidebar } from "@/components/sidebar-cards";
 import type { ArticleWithRelations } from "@/lib/types";
 
 export default function Home() {
+  console.log('🏠 SafraReport Home: Starting Home component render');
+  
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
   const [page, setPage] = useState(0);
   const { toast } = useToast();

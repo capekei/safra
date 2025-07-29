@@ -49,7 +49,7 @@ export function useSupabaseAuth() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: string, session: any) => {
         if (event === 'SIGNED_IN' && session?.user) {
           // Get user profile from database
           const { data: userData, error: dbError } = await supabase

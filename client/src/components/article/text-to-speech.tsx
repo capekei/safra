@@ -36,6 +36,21 @@ interface VoiceOption {
   displayName: string;
 }
 
+// Utility function to check browser capabilities
+const checkBrowserSupport = () => {
+  const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+  const isEdge = /Edg/.test(navigator.userAgent);
+  const isSafari = /Safari/.test(navigator.userAgent) && /Apple Computer/.test(navigator.vendor);
+  const isFirefox = /Firefox/.test(navigator.userAgent);
+  
+  return {
+    speechSynthesis: 'speechSynthesis' in window,
+    pauseResume: isChrome || isEdge || isSafari, // Firefox has limited pause/resume support
+    qualityVoices: isChrome || isEdge,
+    browserName: isChrome ? 'Chrome' : isEdge ? 'Edge' : isSafari ? 'Safari' : isFirefox ? 'Firefox' : 'Desconocido'
+  };
+};
+
 export function TextToSpeech({ text, className }: TextToSpeechProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -51,8 +66,11 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [pausedAt, setPausedAt] = useState(0);
+  const [browserSupport] = useState(checkBrowserSupport());
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number>(0);
 
   // Language options (Spain Spanish completely excluded)
   const languages = [
@@ -195,114 +213,148 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
   };
 
   const handlePlay = () => {
+    console.log('🎵 TTS Play clicked:', { isPlaying, isPaused, hasUtterance: !!utteranceRef.current });
+    
+    // Clear any existing errors
+    setError(null);
+    
+    // Check browser support
+    if (!browserSupport.speechSynthesis) {
+      setError('Tu navegador no soporta síntesis de voz. Prueba con Chrome, Edge o Safari.');
+      return;
+    }
+    
     // Resume if paused
-    if (isPaused && speechSynthesis.paused) {
-      speechSynthesis.resume();
-      setIsPaused(false);
-      setIsPlaying(true);
-      
-      // Resume progress tracking
-      if (utteranceRef.current && !progressIntervalRef.current) {
-        const words = utteranceRef.current.text.split(' ').length;
-        const wordsPerMinute = 150 * speed;
-        const estimatedDuration = (words / wordsPerMinute) * 60 * 1000;
+    if (isPaused && utteranceRef.current) {
+      try {
+        if (speechSynthesis.paused) {
+          console.log('🎵 Resuming paused speech');
+          speechSynthesis.resume();
+        } else {
+          console.log('🎵 Restarting from paused position:', pausedAt + '%');
+          // Speech was canceled, restart from paused position
+          const words = cleanText(text).split(' ');
+          const pausedWords = Math.floor((pausedAt / 100) * words.length);
+          const remainingText = words.slice(pausedWords).join(' ');
+          
+          if (remainingText.trim()) {
+            const newUtterance = new SpeechSynthesisUtterance(remainingText);
+            if (selectedVoice) newUtterance.voice = selectedVoice;
+            newUtterance.rate = speed * 0.95;
+            newUtterance.pitch = pitch;
+            newUtterance.volume = volume;
+            
+            setupUtteranceEvents(newUtterance, pausedAt);
+            utteranceRef.current = newUtterance;
+            speechSynthesis.speak(newUtterance);
+          }
+        }
         
-        let elapsed = (progress / 100) * estimatedDuration;
-        progressIntervalRef.current = setInterval(() => {
-          elapsed += 100;
-          const newProgress = Math.min((elapsed / estimatedDuration) * 100, 100);
-          setProgress(newProgress);
-        }, 100);
+        setIsPaused(false);
+        setIsPlaying(true);
+        startProgressTracking();
+      } catch (error) {
+        console.error('Error resuming speech:', error);
+        setError('Error al reanudar la reproducción. Intenta nuevamente.');
       }
       return;
     }
 
-    // Cancel any ongoing speech
-    speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(cleanText(text));
-    
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-    }
-    
-    // Optimize for natural speech with realistic settings
-    utterance.rate = speed * 0.95; // Slightly slower for better clarity
-    utterance.pitch = pitch;
-    utterance.volume = volume;
-    
-    // Add natural pauses for better comprehension
-    let enhancedText = utterance.text;
-    enhancedText = enhancedText.replace(/\./g, '.\u200B '); // Zero-width space for natural pause
-    enhancedText = enhancedText.replace(/,/g, ',\u200B ');
-    enhancedText = enhancedText.replace(/;/g, ';\u200B ');
-    enhancedText = enhancedText.replace(/:/g, ':\u200B ');
-    utterance.text = enhancedText;
-    
-    utterance.onstart = () => {
-      setIsPlaying(true);
-      setIsPaused(false);
-      setProgress(0);
+    // Start new speech
+    try {
+      console.log('🎵 Starting new speech synthesis');
       
-      // Estimate duration based on text length and rate
-      const words = utterance.text.split(' ').length;
-      const wordsPerMinute = 150 * speed;
-      const estimatedDuration = (words / wordsPerMinute) * 60 * 1000;
-      setDuration(estimatedDuration);
+      // Cancel any ongoing speech
+      speechSynthesis.cancel();
+      clearProgressInterval();
       
-      // Update progress
-      let elapsed = 0;
-      progressIntervalRef.current = setInterval(() => {
-        elapsed += 100;
-        const newProgress = Math.min((elapsed / estimatedDuration) * 100, 100);
-        setProgress(newProgress);
-      }, 100);
-    };
-    
-    utterance.onend = () => {
-      setIsPlaying(false);
-      setIsPaused(false);
-      setProgress(100);
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-      setTimeout(() => setProgress(0), 500);
-    };
-    
-    utterance.onerror = (event) => {
-      console.error("Speech synthesis error:", event);
-      setIsPlaying(false);
-      setIsPaused(false);
+      // Reset state
       setProgress(0);
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
+      setPausedAt(0);
+      
+      const cleanedText = cleanText(text);
+      if (!cleanedText.trim()) {
+        setError('No hay texto para reproducir.');
+        return;
       }
       
-      // Set error message based on error type
-      if (event.error === 'network') {
-        setError('Error de conexión. Verifica tu internet e intenta nuevamente.');
-      } else if (event.error === 'canceled' || event.error === 'interrupted') {
-        setError(null); // User canceled, not an error
-      } else if (event.error === 'not-allowed') {
-        setError('Permisos de audio denegados. Habilita el audio en tu navegador.');
+      console.log('🎵 Text length:', cleanedText.length, 'characters');
+      
+      const utterance = new SpeechSynthesisUtterance(cleanedText);
+      
+      // Set voice with fallback
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+        console.log('🎵 Using voice:', selectedVoice.name);
       } else {
-        setError('No se pudo reproducir el audio. Intenta con otra voz o navegador.');
+        console.log('🎵 No voice selected, using default');
       }
-      setRetryCount(prev => prev + 1);
-    };
-    
-    utteranceRef.current = utterance;
-    speechSynthesis.speak(utterance);
+      
+      // Optimize settings for better speech
+      utterance.rate = Math.max(0.1, Math.min(2.0, speed * 0.95));
+      utterance.pitch = Math.max(0.1, Math.min(2.0, pitch));
+      utterance.volume = Math.max(0.1, Math.min(1.0, volume));
+      
+      console.log('🎵 Speech settings:', { rate: utterance.rate, pitch: utterance.pitch, volume: utterance.volume });
+      
+      // Add natural pauses for better comprehension
+      let enhancedText = cleanedText;
+      enhancedText = enhancedText.replace(/\./g, '.\u200B ');
+      enhancedText = enhancedText.replace(/,/g, ',\u200B ');
+      enhancedText = enhancedText.replace(/;/g, ';\u200B ');
+      enhancedText = enhancedText.replace(/:/g, ':\u200B ');
+      utterance.text = enhancedText;
+      
+      setupUtteranceEvents(utterance, 0);
+      utteranceRef.current = utterance;
+      
+      // Add a small delay for better reliability
+      setTimeout(() => {
+        if (utteranceRef.current) {
+          console.log('🎵 Speaking utterance');
+          speechSynthesis.speak(utteranceRef.current);
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error starting speech:', error);
+      setError('Error al iniciar la reproducción. Verifica que tu navegador soporte síntesis de voz.');
+      setIsPlaying(false);
+      setIsPaused(false);
+    }
   };
 
   const handlePause = () => {
-    if (speechSynthesis.speaking && !speechSynthesis.paused) {
-      speechSynthesis.pause();
-      setIsPaused(true);
-      setIsPlaying(false);
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
+    console.log('⏸️ TTS Pause clicked:', { 
+      isPlaying, 
+      isPaused, 
+      speaking: speechSynthesis.speaking, 
+      paused: speechSynthesis.paused,
+      progress 
+    });
+    
+    try {
+      if (speechSynthesis.speaking && !speechSynthesis.paused) {
+        console.log('⏸️ Pausing active speech');
+        speechSynthesis.pause();
+        setPausedAt(progress);
+        setIsPaused(true);
+        setIsPlaying(false);
+        clearProgressInterval();
+      } else if (isPlaying) {
+        // Fallback for browsers that don't support pause properly
+        console.log('⏸️ Canceling speech (fallback pause)');
+        speechSynthesis.cancel();
+        setPausedAt(progress);
+        setIsPaused(true);
+        setIsPlaying(false);
+        clearProgressInterval();
+      } else {
+        console.log('⏸️ Nothing to pause');
       }
+    } catch (error) {
+      console.error('Error pausing speech:', error);
+      setError('Error al pausar la reproducción.');
     }
   };
 
@@ -311,11 +363,147 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
     setIsPlaying(false);
     setIsPaused(false);
     setProgress(0);
+    setPausedAt(0);
     setError(null);
     utteranceRef.current = null;
+    clearProgressInterval();
+  };
+
+  const clearProgressInterval = () => {
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
     }
+  };
+
+  const startProgressTracking = () => {
+    if (!utteranceRef.current) {
+      console.log('⚠️ No utterance ref for progress tracking');
+      return;
+    }
+    
+    console.log('📊 Starting progress tracking');
+    clearProgressInterval();
+    
+    const words = utteranceRef.current.text.split(' ').length;
+    const wordsPerMinute = 150 * speed;
+    const estimatedDuration = (words / wordsPerMinute) * 60 * 1000;
+    setDuration(estimatedDuration);
+    
+    console.log('📊 Progress tracking setup:', { words, wordsPerMinute, estimatedDuration });
+    
+    startTimeRef.current = Date.now();
+    let elapsed = (pausedAt / 100) * estimatedDuration;
+    
+    progressIntervalRef.current = setInterval(() => {
+      // Only update if we're actually playing
+      if (!speechSynthesis.speaking || speechSynthesis.paused) {
+        return;
+      }
+      
+      elapsed += 100; // Slower updates for better performance
+      const newProgress = Math.min((elapsed / estimatedDuration) * 100, 99);
+      setProgress(newProgress);
+      
+      // Stop tracking if we've reached the estimated end
+      if (newProgress >= 99) {
+        clearProgressInterval();
+      }
+    }, 100);
+  };
+
+  const setupUtteranceEvents = (utterance: SpeechSynthesisUtterance, startProgress: number) => {
+    console.log('🎛️ Setting up utterance events');
+    
+    utterance.onstart = () => {
+      console.log('🎵 Speech started');
+      setIsPlaying(true);
+      setIsPaused(false);
+      setError(null);
+      setRetryCount(0);
+      
+      if (startProgress === 0) {
+        setProgress(0);
+        setPausedAt(0);
+      }
+      startProgressTracking();
+    };
+    
+    utterance.onend = () => {
+      console.log('🎵 Speech ended');
+      setIsPlaying(false);
+      setIsPaused(false);
+      setProgress(100);
+      setPausedAt(0);
+      clearProgressInterval();
+      
+      // Reset progress after a delay
+      setTimeout(() => {
+        setProgress(0);
+      }, 1500);
+    };
+    
+    utterance.onpause = () => {
+      console.log('⏸️ Speech paused');
+      setIsPaused(true);
+      setIsPlaying(false);
+      clearProgressInterval();
+    };
+    
+    utterance.onresume = () => {
+      console.log('▶️ Speech resumed');
+      setIsPaused(false);
+      setIsPlaying(true);
+      startProgressTracking();
+    };
+    
+    utterance.onerror = (event) => {
+      console.error('❌ Speech synthesis error:', event.error, event);
+      setIsPlaying(false);
+      setIsPaused(false);
+      setProgress(0);
+      clearProgressInterval();
+      
+      // More specific error handling
+      switch (event.error) {
+        case 'network':
+          setError('Error de conexión. Verifica tu internet e intenta nuevamente.');
+          break;
+        case 'canceled':
+        case 'interrupted':
+          // Don't show error for user-initiated cancellations
+          setError(null);
+          break;
+        case 'not-allowed':
+          setError('Permisos de audio denegados. Habilita el audio en tu navegador.');
+          break;
+        case 'synthesis-failed':
+          setError('Error de síntesis. Intenta con otra voz o velocidad.');
+          break;
+        case 'synthesis-unavailable':
+          setError('Síntesis de voz no disponible. Intenta recargar la página.');
+          break;
+        case 'language-unavailable':
+          setError('Idioma no disponible. Selecciona otro idioma.');
+          break;
+        case 'voice-unavailable':
+          setError('Voz no disponible. Selecciona otra voz.');
+          break;
+        default:
+          setError(`Error de reproducción: ${event.error}. Intenta con otro navegador.`);
+      }
+      
+      setRetryCount(prev => prev + 1);
+    };
+    
+    // Add boundary event for better progress tracking
+    utterance.onboundary = (event) => {
+      if (event.name === 'word' || event.name === 'sentence') {
+        // Update progress based on character position
+        const progressPercent = (event.charIndex / utterance.text.length) * 100;
+        setProgress(Math.min(progressPercent, 99)); // Don't go to 100% until onend
+      }
+    };
   };
 
   const handleRetry = () => {
@@ -355,11 +543,17 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
   const words = cleanText(text).split(' ').length;
   const readingTime = Math.ceil(words / (150 * speed));
   
-  // Keyboard shortcuts
+  // Cleanup and keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Only handle if focus is not on an input element
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
       if (e.key === ' ' && e.ctrlKey) {
         e.preventDefault();
+        console.log('⌨️ Keyboard shortcut: Ctrl+Space');
         if (isPlaying) {
           handlePause();
         } else {
@@ -369,19 +563,48 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
     };
     
     window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isPlaying]);
+    
+    // Cleanup on unmount
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+      try {
+        speechSynthesis.cancel();
+      } catch (error) {
+        console.error('Error during cleanup:', error);
+      }
+      clearProgressInterval();
+    };
+  }, [isPlaying, isPaused]); // Added isPaused to dependencies
+
+  // Handle page visibility change to maintain state
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isPlaying) {
+        // Page hidden while playing - preserve state
+        if (!speechSynthesis.paused && speechSynthesis.speaking) {
+          speechSynthesis.pause();
+          setPausedAt(progress);
+          setIsPaused(true);
+          setIsPlaying(false);
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isPlaying, progress]);
 
   return (
     <>
       <div 
         data-tts-component
-        className={cn("bg-gradient-to-br from-primary/5 via-gray-50 to-primary/10 rounded-2xl p-6 shadow-lg border border-primary/20 relative overflow-hidden", className)}
+        className={cn("bg-gradient-to-br from-[#00ff00]/5 via-white/95 to-[#00ff00]/10 rounded-2xl p-6 shadow-xl border-2 border-[#00ff00]/20 hover:border-[#00ff00]/30 transition-all duration-300 relative overflow-hidden backdrop-blur-sm", className)}
       >
-        {/* Animated background effect when playing */}
+        {/* SafraReport branded animated background effect when playing */}
         {isPlaying && (
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent animate-pulse" />
+          <div className="absolute inset-0 opacity-15">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#00ff00]/30 to-transparent animate-pulse" />
+            <div className="absolute -inset-4 bg-[#00ff00]/5 blur-2xl animate-pulse" />
           </div>
         )}
         
@@ -389,27 +612,32 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className={cn(
-              "p-3 rounded-full transition-all duration-300",
-              isPlaying ? "bg-primary text-white animate-pulse" : "bg-primary/10 text-primary"
+              "p-3 rounded-full transition-all duration-300 shadow-lg",
+              isPlaying ? "bg-[#00ff00] text-black animate-pulse shadow-[#00ff00]/25" : "bg-[#00ff00]/10 text-[#00ff00] border border-[#00ff00]/20"
             )}>
               <Volume2 className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Escuchar artículo</h3>
+              <h3 className="font-bold text-gray-900 text-lg">🎧 Escuchar Artículo</h3>
               <p className="text-sm text-gray-600">
                 {selectedVoice ? (
                   <span className="flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    {selectedVoice.name}
+                    <span className="inline-block w-2 h-2 bg-[#00ff00] rounded-full animate-pulse"></span>
+                    <span className="font-medium">{selectedVoice.name}</span>
                   </span>
-                ) : "Voz femenina con acento neutro"}
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 bg-gray-400 rounded-full"></span>
+                    Voz femenina con acento neutro
+                  </span>
+                )}
               </p>
             </div>
           </div>
           
-          <div className="text-right">
-            <p className="text-xs text-gray-500">Tiempo estimado</p>
-            <p className="text-sm font-semibold text-gray-700">{readingTime} min</p>
+          <div className="text-right bg-[#00ff00]/5 px-3 py-2 rounded-lg border border-[#00ff00]/20">
+            <p className="text-xs font-medium text-gray-600">Tiempo estimado</p>
+            <p className="text-lg font-bold text-[#00ff00]">{readingTime} min</p>
           </div>
         </div>
         
@@ -460,8 +688,8 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
                 variant="default"
                 size="sm"
                 onClick={handlePlay}
-                disabled={!!error && retryCount >= 3}
-                className="rounded-full bg-primary hover:bg-primary/90 transition-all duration-200 hover:scale-105"
+                disabled={!!error && retryCount >= 3 || !browserSupport.speechSynthesis}
+                className="rounded-full bg-[#00ff00] hover:bg-[#00ff00]/90 text-black font-medium transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-[#00ff00]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <Play className="h-4 w-4 mr-1" />
                 {isPaused ? "Continuar" : "Reproducir"}
@@ -471,7 +699,8 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
                 variant="default"
                 size="sm"
                 onClick={handlePause}
-                className="rounded-full bg-primary hover:bg-primary/90 transition-all duration-200 hover:scale-105"
+                disabled={!browserSupport.speechSynthesis}
+                className="rounded-full bg-[#00ff00] hover:bg-[#00ff00]/90 text-black font-medium transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-[#00ff00]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <Pause className="h-4 w-4 mr-1" />
                 Pausar
@@ -483,8 +712,9 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
               size="sm"
               onClick={handleStop}
               disabled={!isPlaying && !isPaused}
-              className="rounded-full border-primary/20"
+              className="rounded-full border-[#00ff00]/30 hover:border-[#00ff00]/60 hover:bg-[#00ff00]/5 transition-all duration-150"
               title="Detener (Ctrl+Space para pausar/reproducir)"
+              aria-label="Detener reproducción"
             >
               <RotateCcw className="h-4 w-4" />
             </Button>
@@ -500,7 +730,7 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
               step={0.1}
               className="flex-1"
             />
-            <span className="text-sm font-semibold text-primary w-16 text-right">
+            <span className="text-sm font-bold text-[#00ff00] w-16 text-right bg-[#00ff00]/10 px-2 py-1 rounded">
               {speed.toFixed(1)}x
             </span>
           </div>
@@ -548,11 +778,31 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
         </div>
 
         {/* Progress bar */}
-        {(isPlaying || progress > 0) && (
-          <div className="mt-3">
-            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        {(isPlaying || isPaused || progress > 0) && (
+          <div className="mt-3 space-y-1">
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>{isPaused ? 'Pausado' : isPlaying ? 'Reproduciendo...' : 'Completado'}</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden cursor-pointer" 
+                 onClick={(e) => {
+                   const rect = e.currentTarget.getBoundingClientRect();
+                   const clickX = e.clientX - rect.left;
+                   const newProgress = (clickX / rect.width) * 100;
+                   setProgress(newProgress);
+                   setPausedAt(newProgress);
+                   if (isPlaying) {
+                     handlePause();
+                     setTimeout(() => handlePlay(), 100);
+                   }
+                 }}
+                 title="Clic para saltar a esta posición"
+            >
               <div 
-                className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-300 ease-linear"
+                className={cn(
+                  "h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-150 ease-out",
+                  isPlaying && "motion-safe:animate-pulse"
+                )}
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -652,12 +902,48 @@ export function TextToSpeech({ text, className }: TextToSpeechProps) {
           )}
         </div>
       
-        {!window.speechSynthesis && (
-          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800 flex items-center">
-              <VolumeX className="h-4 w-4 mr-2" />
-              Tu navegador no soporta la síntesis de voz. Prueba con Chrome o Edge para mejor experiencia.
-            </p>
+        {/* Enhanced browser compatibility warnings */}
+        {!browserSupport.speechSynthesis && (
+          <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div className="flex items-start gap-3">
+              <VolumeX className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-red-800 mb-1">
+                  Síntesis de voz no disponible
+                </p>
+                <p className="text-xs text-red-700">
+                  Tu navegador no soporta esta función. Recomendamos usar Chrome, Edge o Safari para la mejor experiencia.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {browserSupport.speechSynthesis && !browserSupport.pauseResume && (
+          <div className="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <div className="flex items-start gap-3">
+              <Volume2 className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-amber-800 mb-1">
+                  Funcionalidad limitada en {browserSupport.browserName}
+                </p>
+                <p className="text-xs text-amber-700">
+                  La pausa/reanudación puede no funcionar correctamente. Usa Chrome o Edge para mejor control.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Debug info in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600">
+            <div className="grid grid-cols-2 gap-2">
+              <div>Browser: {browserSupport.browserName}</div>
+              <div>Voices: {voices.length}</div>
+              <div>Speech API: {browserSupport.speechSynthesis ? '✅' : '❌'}</div>
+              <div>Pause/Resume: {browserSupport.pauseResume ? '✅' : '❌'}</div>
+            </div>
           </div>
         )}
       </div>

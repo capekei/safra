@@ -17,7 +17,7 @@ import 'dotenv/config';
 import { supabaseAdmin } from './supabase';
 import { db } from './db';
 import { adminUsers } from '@shared/schema';
-import { storage } from './storage';
+import { storage } from './database/storage';
 
 interface Auth0User {
   user_id: string;
@@ -226,7 +226,7 @@ class Auth0ToSupabaseMigration {
 
       // Verificar si ya existe
       const { data: existingUsers } = await supabaseAdmin!.auth.admin.listUsers();
-      const existingUser = existingUsers?.users?.find(u => u.email === defaultAdminEmail);
+      const existingUser = existingUsers?.users?.find((u: any) => u.email === defaultAdminEmail);
       
       if (existingUser) {
         console.log('⚠️  Usuario administrador por defecto ya existe');

@@ -3,11 +3,41 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// In development mode, if Supabase vars are not configured, use mock client
+const isDev = import.meta.env.NODE_ENV === 'development' || import.meta.env.DEV;
+
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Faltan variables de entorno de Supabase');
+  if (isDev) {
+    console.warn('⚠️ SafraReport: Variables de Supabase no configuradas. Usando modo desarrollo sin autenticación.');
+  } else {
+    throw new Error('Faltan variables de entorno de Supabase');
+  }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create mock Supabase client for development when vars are missing
+const createMockSupabaseClient = () => ({
+  auth: {
+    getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+    getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    signInWithPassword: () => Promise.resolve({ data: { user: null, session: null }, error: { message: 'Mock auth - no authentication available in development mode' } }),
+    signInWithOAuth: () => Promise.resolve({ data: { user: null, session: null }, error: { message: 'Mock auth - no authentication available in development mode' } }),
+    signUp: () => Promise.resolve({ data: { user: null, session: null }, error: { message: 'Mock auth - no authentication available in development mode' } }),
+    signOut: () => Promise.resolve({ error: null }),
+    resetPasswordForEmail: () => Promise.resolve({ data: {}, error: null })
+  },
+  from: () => ({
+    select: () => ({
+      eq: () => ({
+        single: () => Promise.resolve({ data: null, error: { message: 'Mock database - no data available in development mode' } })
+      })
+    })
+  })
+});
+
+export const supabase = (!supabaseUrl || !supabaseAnonKey) && isDev 
+  ? createMockSupabaseClient() as any
+  : createClient(supabaseUrl, supabaseAnonKey);
 
 // Database types
 export interface User {

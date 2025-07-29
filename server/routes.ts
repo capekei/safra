@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "./database/storage";
 import { z } from "zod";
-import adminRoutes from "./admin-routes";
+import adminRoutes from "./routes/admin/routes";
 import adminAccessRoutes from "./admin-access";
-import adminArticlesFix from "./admin-articles-fix";
-import supabaseAuthRoutes from "./supabase-auth";
-import userRoutes from "./user-routes";
+import adminArticlesFix from "./utils/admin-articles-fix";
+import supabaseAuthRoutes from "./middleware/auth";
+import userRoutes from "./routes/user/routes";
 import { db } from "./db";
 import { articles, categories, classifieds, businesses, classifiedCategories, businessCategories, provinces } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
@@ -351,7 +351,7 @@ Sitemap: ${baseUrl}/api/sitemap.xml`;
   app.use("/api/admin", adminRoutes);
   
   // Register author routes
-  import("./author-routes").then(({ registerAuthorRoutes }) => {
+  import("./routes/author-routes").then(({ registerAuthorRoutes }) => {
     registerAuthorRoutes(app, storage as any);
   });
   

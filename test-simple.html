@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test SafraReport</title>
+</head>
+<body>
+    <h1>SafraReport Test</h1>
+    <p>Server is working on port 4000</p>
+    <script>
+        console.log('HTML loaded successfully');
+        fetch('/api/articles')
+            .then(response => response.json())
+            .then(data => {
+                console.log('API Response:', data);
+                document.body.innerHTML += '<p>API returned ' + data.length + ' articles</p>';
+            })
+            .catch(error => {
+                console.error('API Error:', error);
+                document.body.innerHTML += '<p style="color: red;">API Error: ' + error.message + '</p>';
+            });
+    </script>
+</body>
+</html>
