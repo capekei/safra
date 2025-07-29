@@ -106,21 +106,24 @@ app.use((req, res, next) => {
   // Test database connection with detailed diagnostics
   try {
     console.log("🔄 Testing database connection...");
-    console.log("🔄 Import drizzle and neon packages...");
+    console.log("🔄 Import drizzle and PostgreSQL packages...");
     
-    const { drizzle } = await import("drizzle-orm/neon-http");
-    const { neon } = await import("@neondatabase/serverless");
+    const { drizzle } = await import("drizzle-orm/node-postgres");
+    const { Pool } = await import("pg");
     
     console.log("✅ Packages imported successfully");
     console.log("🔄 Creating database connection...");
     
-    const sql = neon(process.env.DATABASE_URL);
-    const db = drizzle(sql);
+    const testPool = new Pool({ 
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+    const db = drizzle(testPool);
     
     console.log("✅ Database instance created");
     console.log("🔄 Testing connection with SELECT 1...");
     
-    const result = await pool.query('SELECT 1 as test, NOW() as timestamp');
+    const result = await testPool.query('SELECT 1 as test, NOW() as timestamp');
     console.log("✅ Database connection successful");
     console.log("📊 Test result:", result.rows);
     console.log("✅ Database URL configured and tested");
@@ -128,7 +131,7 @@ app.use((req, res, next) => {
     // Test article count for deployment verification (skip on first deploy)
     try {
       console.log("🔄 Verifying article count...");
-      const articleCount = await pool.query("SELECT COUNT(*) as count FROM articles WHERE status = 'published'");
+      const articleCount = await testPool.query("SELECT COUNT(*) as count FROM articles WHERE published = true");
       console.log("📰 Published articles count:", articleCount.rows[0]?.count || 0);
     } catch (tableError) {
       console.log("⚠️ Articles table not found - likely first deployment (this is normal)");
