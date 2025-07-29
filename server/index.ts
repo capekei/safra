@@ -135,15 +135,15 @@ app.use((req, res, next) => {
     }
     
   } catch (error) {
-    console.error("❌ FATAL: Database connection failed on startup!");
+    console.error("❌ WARNING: Database connection failed on startup!");
     console.error("🔍 Error details:", error instanceof Error ? error.message : String(error));
     console.error("🔧 Stack trace:", error instanceof Error ? error.stack : 'No stack trace');
     console.error("💡 Troubleshooting:");
-    console.error("  1. Verify DATABASE_URL in Replit Secrets");
+    console.error("  1. Verify DATABASE_URL in environment variables");
     console.error("  2. Ensure format: postgresql://user:pass@host:port/db?sslmode=require");
-    console.error("  3. Check Replit status: status.replit.com");
-    console.error("  4. Consider migrating to Neon.tech if Replit DB is unstable");
-    process.exit(1);
+    console.error("  3. Check if database tables exist - may need migration");
+    console.error("  4. App will continue but database features may not work");
+    // Don't exit - let the app start and handle DB errors gracefully
   }
   
   console.log("✅ CORS configured for deployment");

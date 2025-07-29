@@ -20,6 +20,7 @@
     "railway:dev": "railway run npm run dev",
     "railway:build": "npm ci --production=false --prefer-offline --no-audit --no-fund && npm run build",
     "render:build": "npm ci --production=false && npm run build",
+    "render:migrate": "npx drizzle-kit push",
     "check": "tsc",
     "lint": "npx tsc --noEmit",
     "audit:fix": "npm audit fix",
