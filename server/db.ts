@@ -9,6 +9,12 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL environment variable is missing!');
+  console.error('💡 Set DATABASE_URL for your deployment platform:');
+  console.error('   Railway: Add DATABASE_URL in Variables tab');
+  console.error('   Vercel: Add DATABASE_URL in Environment Variables');
+  console.error('   Docker: Add -e DATABASE_URL=your_db_url');
+  console.error('📋 Format: postgresql://user:pass@host:port/db?sslmode=require');
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
   );
