@@ -4,24 +4,26 @@
 
 Your deployment is failing because `DATABASE_URL` is missing. Here's how to fix it:
 
-### Railway Deployment
+### Railway Deployment - Quick Setup
 
 1. **Go to your Railway project dashboard**
 2. **Click on "Variables" tab**
-3. **Add these environment variables:**
+3. **Copy/paste these exact values:**
 
 ```bash
 NODE_ENV=production
-DATABASE_URL=postgresql://user:password@host:port/database?sslmode=require
-SESSION_SECRET=your_super_long_random_secret_key_here
-AUTH0_DOMAIN=your-production-domain.auth0.com
-AUTH0_CLIENT_ID=your_production_client_id
-AUTH0_CLIENT_SECRET=your_production_client_secret
+DATABASE_URL=postgresql://neondb_owner:npg_oI0tCbLKq8rS@ep-small-block-adohp1p0.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+SESSION_SECRET=supersecretrandomkey64characterslong1234567890abcdefghijklmnop
+AUTH0_DOMAIN=your-domain.auth0.com
+AUTH0_CLIENT_ID=your_client_id
+AUTH0_CLIENT_SECRET=your_client_secret
 AUTH0_AUDIENCE=https://api.safrareport.com
-AUTH0_ISSUER_BASE_URL=https://your-production-domain.auth0.com
-AUTH0_SECRET=your_32_character_auth0_secret
+AUTH0_ISSUER_BASE_URL=https://your-domain.auth0.com
+AUTH0_SECRET=randomkey32characterslong12345678
 PORT=4000
 ```
+
+**🚨 REQUIRED: Update AUTH0_* values with your actual Auth0 credentials**
 
 ### Vercel Deployment
 
