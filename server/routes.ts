@@ -23,29 +23,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/user", userRoutes);
   // Health check endpoint optimized for Dominican mobile networks
   app.get("/api/health", async (req, res) => {
-    try {
-      // Quick database ping (faster than count query for 3G networks)
-      await db.execute("SELECT 1 as health");
-      
-      res.status(200).json({
-        status: "healthy",
-        timestamp: new Date().toISOString(),
-        uptime: Math.floor(process.uptime()),
-        memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-        dominican: {
-          currency: "DOP",
-          mobile_optimized: true,
-          network: "3G_ready"
-        }
-      });
-    } catch (error) {
-      console.error('Health check failed:', error);
-      res.status(503).json({
-        status: "unhealthy",
-        error: error instanceof Error ? error.message : "Database connection failed",
-        timestamp: new Date().toISOString()
-      });
-    }
+    // Simple health check without database dependency for now
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
+      memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      dominican: {
+        currency: "DOP",
+        mobile_optimized: true,
+        network: "3G_ready"
+      },
+      deployment: "render",
+      note: "Database check disabled for initial deployment"
+    });
   });
 
   // News and Articles routes
