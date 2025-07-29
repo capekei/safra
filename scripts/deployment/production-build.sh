@@ -17,9 +17,15 @@ fi
 NODE_VERSION=$(node --version)
 echo "📋 Node.js version: $NODE_VERSION"
 
-# Install dependencies
+# Install dependencies with retry for deployment environments
 echo "📦 Installing dependencies..."
-npm ci --production=false
+if ! npm ci --production=false; then
+    echo "⚠️  npm ci failed, trying alternative approach..."
+    echo "🔄 Removing node_modules and package-lock.json..."
+    rm -rf node_modules package-lock.json
+    echo "📦 Installing with npm install..."
+    npm install
+fi
 
 # Update browserslist db
 echo "🌐 Updating browserslist database..."
