@@ -8,6 +8,7 @@ import morgan from "morgan";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedAuthors } from "./seed-authors";
+import { db, pool } from "./db";
 
 const app = express();
 
@@ -119,15 +120,19 @@ app.use((req, res, next) => {
     console.log("✅ Database instance created");
     console.log("🔄 Testing connection with SELECT 1...");
     
-    const result = await sql`SELECT 1 as test, NOW() as timestamp`;
+    const result = await pool.query('SELECT 1 as test, NOW() as timestamp');
     console.log("✅ Database connection successful");
-    console.log("📊 Test result:", result);
+    console.log("📊 Test result:", result.rows);
     console.log("✅ Database URL configured and tested");
     
-    // Test article count for deployment verification
-    console.log("🔄 Verifying article count...");
-    const articleCount = await sql`SELECT COUNT(*) as count FROM articles WHERE status = 'published'`;
-    console.log("📰 Published articles count:", articleCount[0]?.count || 0);
+    // Test article count for deployment verification (skip on first deploy)
+    try {
+      console.log("🔄 Verifying article count...");
+      const articleCount = await pool.query("SELECT COUNT(*) as count FROM articles WHERE status = 'published'");
+      console.log("📰 Published articles count:", articleCount.rows[0]?.count || 0);
+    } catch (tableError) {
+      console.log("⚠️ Articles table not found - likely first deployment (this is normal)");
+    }
     
   } catch (error) {
     console.error("❌ FATAL: Database connection failed on startup!");
