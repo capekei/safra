@@ -10,9 +10,9 @@
 
 ### Step 2: Render Auto-Configuration
 Render will detect the `render.yaml` file and automatically:
-- ✅ Create PostgreSQL database
 - ✅ Configure Node.js web service  
 - ✅ Set up build/start commands
+- ✅ Connect to your Supabase database
 - ✅ Generate secure secrets
 
 ### Step 3: Supabase Variables (Auto-Configured!)
@@ -30,7 +30,7 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## 🌐 Your App URLs
 - **Web Service**: `https://safrareport.onrender.com`
-- **Database**: Auto-connected via `DATABASE_URL`
+- **Database**: Supabase PostgreSQL (shared auth + data)
 - **Health Check**: `https://safrareport.onrender.com/api/health`
 
 ## 🇩🇴 Dominican Marketplace Optimized

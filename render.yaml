@@ -13,16 +13,10 @@ services:
       - key: PORT
         value: 4000
       - key: DATABASE_URL
-        value: postgresql://safrareport_user:Fyh7h15kzLeH98T2UA6Lo6YP8NxbszfO@dpg-d24ih8qli9vc73ddt4pg-a.oregon-postgres.render.com/safrareport
+        value: postgresql://postgres:O1hM7aGzQhb3Kws1@aws-0-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require
       - key: SESSION_SECRET
         generateValue: true
       - key: VITE_SUPABASE_URL
         value: https://qolgaptebconzwwgjagm.supabase.co
       - key: VITE_SUPABASE_ANON_KEY
         value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvbGdhcHRlYmNvbnp3d2dqYWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3ODQzNzMsImV4cCI6MjA2ODM2MDM3M30.YeA76guDdhsKEKplNuMABCMQN8k8IgnyHW8su10iA38
-
-databases:
-  - name: safrareport-db
-    databaseName: safrareport
-    user: safrareport_user
-    plan: free
