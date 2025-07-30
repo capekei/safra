@@ -117,7 +117,8 @@ app.use((req, res, next) => {
     const testPool = new Pool({ 
       connectionString: process.env.DATABASE_URL,
       ssl: {
-        rejectUnauthorized: false // Fix for Supabase SSL certificate issues
+        rejectUnauthorized: true,
+        ca: process.env.SUPABASE_CA_CERT
       }
     });
     const db = drizzle(testPool);
