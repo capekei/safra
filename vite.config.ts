@@ -17,26 +17,29 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1000, // Increase limit to 1MB for Dominican networks
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-accordion', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-          editor: ['@tiptap/react', '@tiptap/starter-kit'],
-          query: ['@tanstack/react-query'],
-          utils: ['date-fns', 'clsx', 'class-variance-authority', 'tailwind-merge']
+          'vendor': ['react', 'react-dom'],
+          'ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-slot', '@radix-ui/react-accordion'],
+          'editor': ['@tiptap/react', '@tiptap/starter-kit'],
+          'icons': ['lucide-react'],
+          'query': ['@tanstack/react-query'],
+          'utils': ['date-fns', 'clsx', 'class-variance-authority', 'tailwind-merge']
         }
       }
     },
-    // Optimize for Dominican mobile users
-    target: 'es2018',
+    // Optimize for Dominican mobile users and slow 3G/4G networks
+    target: 'es2015', // Better compatibility with older phones
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
+        drop_console: true, // Remove console logs in production
         drop_debugger: true
       }
-    }
+    },
+    reportCompressedSize: false // Speed up build
   },
   server: {
     proxy: {
