@@ -32,12 +32,7 @@ interface ArticleData {
     name: string;
     slug: string;
   };
-  author?: {
-    id: number;
-    name: string;
-    bio?: string;
-    avatar?: string;
-  };
+  authorUsername?: string | null;
 }
 
 export default function Article() {
@@ -138,7 +133,7 @@ export default function Article() {
         description={article.excerpt}
         image={article.imageUrl}
         type="article"
-        author={article.author?.name}
+        author={article.authorUsername || undefined}
         publishedTime={article.publishedAt}
         section={article.category?.name}
       />
@@ -170,14 +165,7 @@ export default function Article() {
             {/* Author and reading info */}
             <div className="flex items-center justify-center space-x-6 text-sm text-gray-600 mb-6">
               <div className="flex items-center">
-                {article.author?.avatar && (
-                  <img 
-                    src={article.author.avatar}
-                    alt={article.author.name}
-                    className="w-8 h-8 rounded-full mr-2 border-2 border-white shadow-sm"
-                  />
-                )}
-                <span className="font-medium">Por {article.author?.name}</span>
+                <span className="font-medium">Por {article.authorUsername || 'Autor'}</span>
               </div>
               <span className="text-gray-400">•</span>
               <span className="flex items-center">
@@ -273,22 +261,12 @@ export default function Article() {
             {/* Sidebar */}
             <div className="lg:col-span-1">
               {/* Author card */}
-              {article.author && (
+              {article.authorUsername && (
                 <GlassCard className="p-6 mb-6 sticky top-24">
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Autor</h3>
                   <div className="flex items-center space-x-4">
-                    {article.author.avatar && (
-                      <img 
-                        src={article.author.avatar}
-                        alt={article.author.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    )}
                     <div>
-                      <h4 className="font-semibold text-gray-900">{article.author.name}</h4>
-                      {article.author.bio && (
-                        <p className="text-sm text-gray-600 line-clamp-2">{article.author.bio}</p>
-                      )}
+                      <h4 className="font-semibold text-gray-900">{article.authorUsername}</h4>
                     </div>
                   </div>
                 </GlassCard>

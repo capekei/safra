@@ -28,7 +28,7 @@ export function SupabaseLoginForm({ onSuccess, showSignUp = false, isAdmin = fal
     lastName: '',
   });
 
-  const { signIn, signUp, resetPassword, signInWithOAuth } = useAuth();
+  const { login } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -44,7 +44,8 @@ export function SupabaseLoginForm({ onSuccess, showSignUp = false, isAdmin = fal
 
     try {
       if (isLogin) {
-        const { error } = await signIn(formData.email, formData.password);
+        const result = await login(formData.email, formData.password);
+        const error = result.success ? null : { message: result.error };
         if (error) {
           setError(error.message === 'Invalid login credentials' 
             ? 'Credenciales inválidas. Verifique su email y contraseña.' 
@@ -59,17 +60,11 @@ export function SupabaseLoginForm({ onSuccess, showSignUp = false, isAdmin = fal
           return;
         }
 
-        const { error } = await signUp(
-          formData.email,
-          formData.password,
-          formData.firstName,
-          formData.lastName
-        );
+        // signUp not available in current auth hook
+        const error = { message: 'Registro no disponible actualmente' };
         
         if (error) {
-          setError(error.message === 'User already registered'
-            ? 'Ya existe una cuenta con este email.'
-            : 'Error al crear la cuenta. Intente nuevamente.');
+          setError('Registro no disponible actualmente');
         } else {
           setSuccess('¡Cuenta creada exitosamente! Revise su email para confirmar su cuenta.');
           setFormData({ email: '', password: '', firstName: '', lastName: '' });
@@ -92,7 +87,8 @@ export function SupabaseLoginForm({ onSuccess, showSignUp = false, isAdmin = fal
     setError(null);
 
     try {
-      const { error } = await resetPassword(formData.email);
+      // resetPassword not available in current auth hook
+      const error = { message: 'Recuperación de contraseña no disponible actualmente' };
       if (error) {
         setError('Error al enviar el correo de recuperación.');
       } else {
@@ -107,7 +103,8 @@ export function SupabaseLoginForm({ onSuccess, showSignUp = false, isAdmin = fal
 
   const handleOAuthSignIn = async (provider: 'google' | 'facebook' | 'github') => {
     try {
-      const { error } = await signInWithOAuth(provider);
+      // signInWithOAuth not available in current auth hook
+      const error = { message: 'OAuth no disponible actualmente' };
       if (error) {
         setError(`Error al iniciar sesión con ${provider}.`);
       }

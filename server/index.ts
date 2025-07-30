@@ -1,8 +1,3 @@
-// CRITICAL: Must be FIRST line - before all imports
-if (process.env.NODE_ENV === 'production') {
-  process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
-}
-
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -12,7 +7,7 @@ import cors from "cors";
 import morgan from "morgan";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { seedAuthors } from "./seed-authors";
+
 import { db, pool } from "./db";
 
 const app = express();
@@ -159,8 +154,8 @@ app.use((req, res, next) => {
   
   console.log("✅ CORS configured for deployment");
   
-  // Seed authors on startup
-  await seedAuthors();
+
+  // await seedAuthors();
   
   const server = await registerRoutes(app);
 

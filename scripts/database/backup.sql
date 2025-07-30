@@ -892,18 +892,14 @@ COPY public.ad_placements (id, name, slug, description, width, height, "position
 -- Data for Name: admin_sessions; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
 
-COPY public.admin_sessions (id, admin_user_id, token, expires_at, ip_address, user_agent, created_at) FROM stdin;
-1	1	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImlhdCI6MTc1MzE0MTE1NywiZXhwIjoxNzUzMjI3NTU3fQ.bZ_lTYUTZcgy870WCjPiYN6zNArRqkHXbLPhlhemBbQ	2025-07-22 23:39:17.245	172.31.128.85	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36	2025-07-21 23:39:17.282863
-\.
+
 
 
 --
 -- Data for Name: admin_users; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
 
-COPY public.admin_users (id, email, username, password, first_name, last_name, role, avatar, active, last_login, created_at, updated_at, replit_id) FROM stdin;
-1	admin@safrareport.com	admin	$2b$10$BmyFCdyZ/do1lccMtyVemu6I8S7o9mrWAZOLK8WXuegoqic7tlGZa	Super	Admin	admin	\N	t	2025-07-21 23:39:17.325	2025-07-21 23:27:18.6419	2025-07-21 23:27:18.6419	\N
-\.
+
 
 
 --
@@ -1102,8 +1098,7 @@ DsSaAOFAG3FrHggYqjdumTSgHuZeAgZt	{"cookie": {"path": "/", "secure": true, "expir
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
 
-COPY public.users (id, username, password, role) FROM stdin;
-\.
+
 
 
 --

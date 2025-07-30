@@ -16,14 +16,7 @@ export interface ArticleWithRelations {
   views: number;
   createdAt: string;
   updatedAt: string;
-  author: {
-    id: number;
-    name: string;
-    email: string;
-    bio?: string;
-    avatar?: string;
-    createdAt: string;
-  };
+  authorUsername: string | null;
   category: {
     id: number;
     name: string;

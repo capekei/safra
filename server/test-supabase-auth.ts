@@ -82,7 +82,7 @@ class SupabaseAuthTest {
       console.log('\n🔍 Probando registro de usuario...');
       
       const testEmail = `test-${Date.now()}@safrareport.test`;
-      const testPassword = 'TestPassword123!';
+      const testPassword = process.env.TEST_PASSWORD || 'TestPassword123!';
 
       const response = await fetch(`${this.baseUrl}/api/auth/signup`, {
         method: 'POST',
@@ -119,7 +119,7 @@ class SupabaseAuthTest {
       
       // Try to login with a test user (if exists) or create one
       const testEmail = 'test@safrareport.test';
-      const testPassword = 'TestPassword123!';
+      const testPassword = process.env.TEST_PASSWORD || 'TestPassword123!';
 
       // First, try to create a test user if it doesn't exist
       if (supabaseAdmin) {

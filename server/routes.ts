@@ -1,20 +1,21 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./database/storage";
+import { DatabaseStorage } from "./database/storage";
+
+const storage = new DatabaseStorage();
 import { z } from "zod";
 import adminRoutes from "./routes/admin/routes";
-import adminAccessRoutes from "./admin-access";
-import adminArticlesFix from "./utils/admin-articles-fix";
-import supabaseAuthRoutes from "./middleware/auth";
+
+// import supabaseAuthRoutes from "./middleware/auth"; // Temporarily disabled - using Neon/Drizzle stack
 import userRoutes from "./routes/user/routes";
 import { db } from "./db";
 import { articles, categories, classifieds, businesses, classifiedCategories, businessCategories, provinces } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { setupAuth, isAuthenticated } from "./replit-auth";
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Mount Supabase auth routes first
-  app.use("/", supabaseAuthRoutes);
+  // app.use("/", supabaseAuthRoutes); // Temporarily disabled - using Neon/Drizzle stack
   
   // Auth middleware (this sets up Replit Auth but shouldn't override our routes)
   // await setupAuth(app);
@@ -152,16 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Authors routes
-  app.get("/api/authors", async (req, res) => {
-    try {
-      const authors = await storage.getAuthors();
-      res.json(authors);
-    } catch (error) {
-      console.error('Error fetching authors:', error);
-      res.status(500).json({ message: "Error al cargar los autores. Por favor, intente nuevamente." });
-    }
-  });
+
 
   // Classifieds routes
   app.get("/api/clasificados", async (req, res) => {
@@ -341,17 +333,8 @@ Sitemap: ${baseUrl}/api/sitemap.xml`;
     res.send(robotsTxt);
   });
 
-  // Mount admin routes (prioritize fixed routes)
-  app.use("/api/admin", adminArticlesFix);
+  // Mount admin routes
   app.use("/api/admin", adminRoutes);
-  
-  // Register author routes
-  import("./routes/author-routes").then(({ registerAuthorRoutes }) => {
-    registerAuthorRoutes(app, storage as any);
-  });
-  
-  // Special admin access route
-  app.use("/", adminAccessRoutes);
 
   // Real-time data endpoints
   app.get('/api/fuel-prices', async (req, res) => {

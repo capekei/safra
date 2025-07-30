@@ -1,12 +1,17 @@
 # SafraReport - Dominican Republic News & Marketplace Platform
 
-A cutting-edge news and marketplace platform delivering hyper-localized, mobile-first content experiences for Dominican Republic users.
+SafraReport is a comprehensive news and marketplace platform designed specifically for the Dominican Republic market, featuring articles, classified ads, business reviews, and secure admin management.
 
-## Features
+## 🚀 Features
 
-### News Platform
-- 📰 Professional news CMS with 10 categories (Nacional, Internacional, Economía, Deportes, etc.)
-- 🔥 Breaking news ticker with real-time updates
+- **News Articles**: Breaking news, featured stories, and categorized content
+- **Classified Ads**: User-generated marketplace with moderation
+- **Business Reviews**: Community-driven business ratings and reviews
+- **Admin Dashboard**: Secure admin panel with role-based access control
+- **Mobile-Optimized**: Responsive design for Dominican mobile networks
+- **Multi-Language**: Spanish-first with English support
+- **Secure Authentication**: bcrypt password hashing and JWT tokens
+- **Row Level Security**: Database-level access control
 - ⭐ Featured articles and hero content sections
 - 📱 Mobile-first responsive design (optimized for 70% mobile users)
 - 🌐 Spanish language support with Dominican idioms
@@ -85,6 +90,8 @@ npm run dev
 
 ### Environment Variables
 ```env
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 DATABASE_URL=postgresql://user:password@host:port/database?sslmode=require
 JWT_SECRET=your-jwt-secret-key
 NODE_ENV=development

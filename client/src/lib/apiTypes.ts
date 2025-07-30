@@ -25,7 +25,7 @@ export interface ArticleResponse {
   slug: string;
   content: string;
   excerpt?: string;
-  author: string;
+  authorUsername: string | null;
   status: 'draft' | 'published' | 'archived';
   publishedAt?: string;
   createdAt: string;
@@ -94,7 +94,7 @@ export function isValidArticle(data: any): data is ArticleResponse {
     typeof data.title === 'string' &&
     typeof data.slug === 'string' &&
     typeof data.content === 'string' &&
-    typeof data.author === 'string' &&
+    (typeof data.authorUsername === 'string' || data.authorUsername === null) &&
     ['draft', 'published', 'archived'].includes(data.status)
   );
 }

@@ -20,7 +20,7 @@ Render will detect the `render.yaml` file and automatically:
 
 ```bash
 VITE_SUPABASE_URL=https://qolgaptebconzwwgjagm.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
 **⚠️ Manual Step Required:** Add your Supabase Service Role Key:
