@@ -124,18 +124,18 @@
             "id": 1,
             "title": "Establish Monorepo Foundation and CI/CD Pipeline",
             "description": "Set up the foundational structure of the monorepo by organizing the root directory, configuring pnpm workspaces, and implementing a CI/CD workflow for automated checks.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
-            "details": "Execute `scripts/maintenance/dr-organize-root-safe.sh` to create core directories. Ensure no orphaned files remain. Configure pnpm workspaces in the root `pnpm-workspace.yaml`. Set up a GitHub Actions workflow for linting, strict type-checking (no `any`), and running initial test suites. Document changes in `docs/changelog.md`.",
+            "details": "Execute `scripts/maintenance/dr-organize-root-safe.sh` to create core directories. Ensure no orphaned files remain. Configure pnpm workspaces in the root `pnpm-workspace.yaml`. Set up a GitHub Actions workflow for linting, strict type-checking (no `any`), and running initial test suites. Document changes in `docs/changelog.md`.\n<info added on 2025-07-31T22:46:43.022Z>\nProgress update: Directory structure established with `docs/deployment/`, `docs/guides/`, `scripts/testing/`, `scripts/database/`, `config/deployment/`, and `tools/testing/` directories. Configured `pnpm-workspace.yaml` for monorepo management. Implemented GitHub Actions workflow in `.github/workflows/ci.yml` with linting, type-checking, testing, build verification, security audit, and dead code detection. Created changelog documentation. Found TypeScript errors in `client/src/__tests__/components.test.tsx` (missing `beforeEach` import), `server/vite.ts` (Vite config type mismatch), and `shared/supabase.ts` (missing `@supabase/ssr` dependency) that require attention before proceeding to dead code cleanup.\n</info added on 2025-07-31T22:46:43.022Z>",
             "testStrategy": "Verify the `dr-organize-root-safe.sh` script completes successfully. Confirm the GitHub Actions workflow triggers on push/PR and that linting/type-checking jobs pass on the initial codebase. Ensure `pnpm install` works correctly across the workspace."
           },
           {
             "id": 2,
             "title": "Identify and Clean Dead Code",
             "description": "Use analysis tools to identify and remove unused code, consolidate duplicates, and ensure a clean architectural foundation before proceeding with restructuring.",
-            "status": "pending",
+            "status": "in-progress",
             "dependencies": [],
-            "details": "Run depcheck and ts-prune to identify unused imports, exports, and functions. Merge similar utilities and helpers. Remove deprecated code paths. Ensure no circular dependencies exist. Document all removed code in changelog.",
+            "details": "Run depcheck and ts-prune to identify unused imports, exports, and functions. Merge similar utilities and helpers. Remove deprecated code paths. Ensure no circular dependencies exist. Document all removed code in changelog.\n<info added on 2025-07-31T23:12:37.632Z>\nDead code analysis results from multiple tools have identified significant cleanup opportunities:\n\n1. Unused Code Statistics:\n- 126 unused files across client components, pages, server files, shared files, and scripts\n- 200+ unused exports identified by ts-prune\n- 61 unused dependencies and 12 unused devDependencies in package.json\n- 69 unused exports (functions, variables, types)\n- 14 unused exported types\n- 2 unlisted dependencies (nanoid, @vitest/coverage-v8)\n- 1 duplicate export (logger|default)\n\n2. Critical Issues:\n- @supabase/auth-helpers-nextjs package is deprecated and should be replaced with @supabase/ssr\n- Duplicate logger exports found in server/lib/logger.ts\n- Missing dependencies: nanoid and @vitest/coverage-v8 need to be added to package.json\n- Large-scale dead code presence affecting bundle size and build times\n\n3. Required Actions:\n- Remove 61 identified unused packages including @radix-ui components, TipTap extensions, react-hook-form, @hookform/resolvers, bcryptjs, cmdk, and embla-carousel-react\n- Delete 126 unused files spanning UI components, admin pages, middleware, and utilities\n- Clean up 69 unused exports and 14 unused types\n- Fix duplicate logger export\n- Add missing dependencies to package.json\n- Replace deprecated @supabase/auth-helpers-nextjs with @supabase/ssr\n\nAll removed code must be documented in the changelog before deletion.\n</info added on 2025-07-31T23:12:37.632Z>",
             "testStrategy": "Run automated dead code analysis tools. Verify no unused exports remain. Test application functionality after code removal. Confirm no circular dependencies exist in dependency graph."
           },
           {
@@ -187,9 +187,9 @@
             "id": 1,
             "title": "Diagnose Neon Connection with Direct psql Tests",
             "description": "Execute direct psql connection tests to the Neon database, both with and without the connection pooler, to isolate the 'Tenant or user not found' error and determine if the issue lies with the credentials, the service, or the pooler.",
-            "status": "pending",
+            "status": "in-progress",
             "dependencies": [],
-            "details": "Use the provided psql commands to connect directly from a terminal. Document the exact output for both the pooler and non-pooler endpoints. Check the Neon project dashboard for any reported outages, status issues, or incorrect credentials. This is the foundational step to guide all subsequent actions.",
+            "details": "Use the provided psql commands to connect directly from a terminal. Document the exact output for both the pooler and non-pooler endpoints. Check the Neon project dashboard for any reported outages, status issues, or incorrect credentials. This is the foundational step to guide all subsequent actions.\n<info added on 2025-07-31T18:21:40.855Z>\nDetailed connection testing protocol for diagnosing the \"Tenant or user not found\" error:\n\n1. Pooler Connection Test Command:\npsql \"postgresql://neondb_owner:npg_TcbpP7ezUJu6@ep-dark-brook-ae83i5pz-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require\"\n\n2. Direct Connection Test Command (remove -pooler from hostname):\npsql \"postgresql://neondb_owner:npg_TcbpP7ezUJu6@ep-dark-brook-ae83i5pz.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require\"\n\n3. Verification Steps:\n- Record exact error messages from both connection attempts\n- Check database 'neondb' existence in project console\n- Verify neondb_owner permissions and status\n- Document any Neon service status indicators\n- Test basic SQL query if connection succeeds: SELECT current_database(), current_user;\n\n4. Required Environment Setup:\n- Ensure psql client is installed and updated\n- Set PGPASSWORD environment variable if needed\n- Verify SSL certificates are properly configured\n\nDocument all test outputs and error messages for analysis in subsequent error handling implementation.\n</info added on 2025-07-31T18:21:40.855Z>",
             "testStrategy": "1. Execute `psql` command with the pooler URL. 2. Execute `psql` command with the direct (non-pooler) URL. 3. Document the success or failure, including any error messages, for both attempts. 4. Verify the Neon project status is 'Active' in the Neon console."
           },
           {
@@ -374,11 +374,71 @@
             "testStrategy": "Peer review all updated documentation for clarity and accuracy. Run the full static analysis suite (`depcheck`, `knip`, `ts-prune`, `npm audit`) one last time to generate a final \"clean\" report, confirming that no new issues were introduced and all cleanup goals were met."
           }
         ]
+      },
+      {
+        "id": 7,
+        "title": "SafraReport Modernization: Next.js 14 & Neon Migration",
+        "description": "Modernize the SafraReport application by migrating the frontend from Vite/React to Next.js 14 with the App Router, and the database from Supabase to Neon, while preserving Supabase for authentication.",
+        "details": "This task involves a full-stack refactor to modernize the application's architecture, improve performance, and reduce costs. The implementation will be phased to ensure a controlled migration.\n\n**Phase 1: Setup & Cleanup**\n1.  Create the feature branch: `feat/next14-neon-refactor`.\n2.  Remove obsolete dependencies: `@emotion/styled`, `chakra-react-select`, `formik`, `react-toastify`. Run `pnpm prune`.\n3.  Delete specified dead code files: `lib/supabaseClient.js`, `create/ArticleSetting.js`, `WriteArticle.js`, `tagOption.js`.\n4.  Perform a global search and remove all `console.log` statements from the codebase.\n5.  Run `pnpm lint --fix` to align the codebase with project standards before restructuring.\n\n**Phase 2: Next.js App Router Migration**\n1.  Install Next.js 14 and its required dependencies.\n2.  Restructure the `src/` directory to match the Next.js App Router convention as specified in the project requirements.\n3.  Migrate existing React components into the new `src/components/` directory, refactoring as needed for server/client component compatibility.\n4.  Re-implement routing logic from Wouter to Next.js, creating `page.tsx` files for the home (`/`), create (`/create`), and dynamic article (`/[slug]`) routes.\n5.  Create the root `layout.tsx` to define the shared UI shell, including headers, footers, and context providers.\n\n**Phase 3: Database Migration (Supabase to Neon)**\n1.  Export the existing Supabase public schema: `pg_dump -Fc -v -d $SUPABASE_URL --schema=public -f supabase_dump.bak`.\n2.  Create a new project in Neon and obtain the connection URL (`$NEON_URL`).\n3.  Restore the backup to the Neon database: `pg_restore -d $NEON_URL -v --no-owner --no-acl supabase_dump.bak`.\n4.  Implement the Neon database connection pool in `src/lib/db.ts` using the `pg` library.\n5.  Enable and configure Row Level Security (RLS) on Neon tables. Implement minimal policies: allow public `SELECT` on articles, and owner-only `INSERT`/`UPDATE`/`DELETE`.\n\n**Phase 4: Logic & Data Fetching**\n1.  Preserve Supabase Auth by creating a Supabase client instance in `src/lib/auth.ts` for authentication purposes only.\n2.  Refactor all data-fetching logic to use the new Neon connection pool (`db.ts`) instead of the Supabase client SDK for database operations.\n3.  Implement server-side data fetching within Next.js Route Handlers or Server Components, using React `cache` for deduplication.\n4.  Configure route segment options (e.g., `export const revalidate = 3600;`) to implement Incremental Static Regeneration (ISR) for article pages and the homepage.\n\n**Phase 5: Deployment Configuration**\n1.  Update the `render.yaml` configuration file for the Next.js application.\n2.  Set the build command to `pnpm build` and the start command to `pnpm start`.\n3.  Configure environment variables in Render: `DATABASE_URL` (pointing to Neon), `SUPABASE_URL`, and `SUPABASE_ANON_KEY`.\n4.  Implement a simple health check endpoint at `/api/health` that performs a basic database query and returns a 200 status.",
+        "testStrategy": "**1. Static Analysis & Code Quality:**\n- Run `pnpm lint` and `pnpm test` to ensure the CI pipeline will pass.\n- Use `depcheck` to verify that all specified unused dependencies have been removed.\n- Manually verify that the specified dead code files and all `console.log` statements are gone.\n\n**2. Database & RLS Verification:**\n- Connect to the Neon database using `psql` and run `SELECT` queries to confirm data integrity post-migration.\n- Test RLS policies:\n  - As an unauthenticated user, attempt to fetch public articles via the API (should succeed).\n  - As an authenticated user, create a new article and verify the `INSERT` succeeds.\n  - As the same authenticated user, attempt to `UPDATE` the created article (should succeed).\n  - As a different authenticated user, attempt to `UPDATE` or `DELETE` the first user's article (should fail with a 403/404 error).\n\n**3. Functional & Routing Tests:**\n- Navigate to the home page, `/create` page, and several dynamic article pages (`/[slug]`). Verify they all return a `200 OK` status code and render correctly without 404 errors.\n- Test the full authentication flow: login and logout must function correctly using the preserved Supabase Auth UI and client.\n- Verify that creating and editing articles works end-to-end, persisting data to the Neon database.\n\n**4. Performance & Caching Validation:**\n- Use browser developer tools to inspect the network tab for ISR-enabled pages. Verify the `X-Vercel-Cache` header shows `HIT` on subsequent requests and `STALE` after the revalidation period.\n- Run Google Lighthouse audits on the deployed application for the home page and a typical article page. Ensure the overall performance score is ≥ 90.\n- Make a `GET` request to the `/api/health` endpoint and confirm it returns a 200 status code.",
+        "status": "pending",
+        "dependencies": [
+          3,
+          4
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Codebase Preparation and Cleanup",
+            "description": "Prepare the project for modernization by creating a dedicated feature branch, removing obsolete dependencies and dead code, and standardizing code formatting according to project guidelines.",
+            "dependencies": [],
+            "details": "Execute Phase 1 of the modernization plan. Create the `feat/next14-neon-refactor` branch. Uninstall specified obsolete packages (`@emotion/styled`, `chakra-react-select`, `formik`, `react-toastify`) and run `pnpm prune`. Delete all specified dead code files and perform a global search and removal of `console.log` statements. Run `pnpm lint --fix` to ensure code quality before major changes.",
+            "status": "pending",
+            "testStrategy": "Use `depcheck` to verify all specified unused dependencies have been removed. Manually inspect the git history to confirm the deletion of dead code files and the absence of `console.log` statements. Ensure the CI pipeline passes after running `pnpm lint` and `pnpm test`."
+          },
+          {
+            "id": 2,
+            "title": "Frontend Migration to Next.js 14 App Router",
+            "description": "Replace the Vite/React frontend with Next.js 14, restructuring the project to use the App Router and migrating existing components and routing logic.",
+            "dependencies": [],
+            "details": "Execute Phase 2 of the modernization plan. Install Next.js 14 and its dependencies. Restructure the `src/` directory to align with the App Router convention. Migrate existing React components into `src/components/`, refactoring for server/client component compatibility. Re-implement routing by creating `page.tsx` files for home, create, and dynamic article routes, and establish a shared UI shell in a root `layout.tsx`.",
+            "status": "pending",
+            "testStrategy": "Run the Next.js development server (`pnpm dev`). Verify that the application shell renders correctly. Navigate to the home (`/`), create (`/create`), and a sample article (`/[slug]`) page to confirm that routing is functional and the root layout is applied consistently."
+          },
+          {
+            "id": 3,
+            "title": "Database Migration from Supabase to Neon",
+            "description": "Perform a full data migration from the existing Supabase database to a new Neon project, including schema and data transfer, and establish a new database connection pool.",
+            "dependencies": [],
+            "details": "Execute Phase 3 of the modernization plan. Export the Supabase public schema using `pg_dump`. Create a new project in Neon and restore the backup using `pg_restore`. Implement a new database connection pool in `src/lib/db.ts` using the `pg` library and the Neon connection URL. Enable and configure basic Row Level Security (RLS) policies on the Neon tables.",
+            "status": "pending",
+            "testStrategy": "Connect directly to the Neon database using `psql` to verify the schema and data were restored successfully. Write and run a test script to confirm a successful connection via the new `src/lib/db.ts` connection pool. Verify RLS policies by attempting both allowed (public SELECT) and disallowed (unauthenticated INSERT) operations."
+          },
+          {
+            "id": 4,
+            "title": "Refactor Data Fetching and Business Logic",
+            "description": "Re-wire the application's data access layer to use the new Neon database for queries while retaining Supabase for authentication, and implement server-side data fetching patterns in Next.js.",
+            "dependencies": [],
+            "details": "Execute Phase 4 of the modernization plan. Create a Supabase client instance in `src/lib/auth.ts` exclusively for authentication. Refactor all data-fetching logic to use the Neon connection pool from `db.ts`. Implement server-side data fetching within Next.js Server Components and Route Handlers, utilizing React `cache` for deduplication and configuring Incremental Static Regeneration (ISR) with `export const revalidate`.",
+            "status": "pending",
+            "testStrategy": "Verify that user authentication (login/logout) remains functional using the Supabase Auth client. Test pages that display lists of articles and individual articles to confirm data is being fetched from Neon. Use browser developer tools to inspect network traffic and confirm server-side rendering and ISR behavior (e.g., checking `X-Vercel-Cache` headers)."
+          },
+          {
+            "id": 5,
+            "title": "Configure Production Deployment and Health Checks",
+            "description": "Update the deployment configuration for the modernized Next.js application on Render, setting up environment variables, build/start commands, and a health check endpoint.",
+            "dependencies": [],
+            "details": "Execute Phase 5 of the modernization plan. Update the `render.yaml` file, setting the build command to `pnpm build` and the start command to `pnpm start`. Configure all required environment variables in the Render dashboard, including `DATABASE_URL` for Neon and `SUPABASE_URL`/`SUPABASE_ANON_KEY` for auth. Implement a health check endpoint at `/api/health` that performs a simple query to confirm database connectivity.",
+            "status": "pending",
+            "testStrategy": "Trigger a new deployment on Render and monitor the build logs for success. Access the deployed application's URL to verify it is live. Make a request to the `/api/health` endpoint and assert a 200 status code is returned. Perform an end-to-end test of the core user flow on the deployed application."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-07-23T16:59:29-04:00",
-      "updated": "2025-07-31T16:57:58.673Z",
+      "updated": "2025-07-31T23:11:29.651Z",
       "description": "Tasks for master context"
     }
   }

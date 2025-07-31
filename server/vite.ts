@@ -46,7 +46,7 @@ export async function setupVite(app: Express, server: Server) {
         allowedHosts: true as const,
       },
       appType: "custom" as const,
-      configFile: false,
+      configFile: false as const,
     };
 
     const vite = await createViteServer({
