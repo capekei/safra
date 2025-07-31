@@ -23,6 +23,8 @@ services:
         value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvbGdhcHRlYmNvbnp3d2dqYWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3ODQzNzMsImV4cCI6MjA2ODM2MDM3M30.YeA76guDdhsKEKplNuMABCMQN8k8IgnyHW8su10iA38
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: SUPABASE_CA_CERT
+        sync: false
       - key: FRONTEND_URL
         value: https://safrareport.onrender.com
       - key: LOG_LEVEL
