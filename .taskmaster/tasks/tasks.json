@@ -235,11 +235,82 @@
             "testStrategy": "1. Verify successful connection to Supabase using the new connection string. 2. Test table creation through the Supabase web interface. 3. Perform a full suite of CRUD tests via the API to ensure all database interactions are functional. 4. Confirm the application is stable and performs as expected with Supabase."
           }
         ]
+      },
+      {
+        "id": 5,
+        "title": "Full-Stack Technology Upgrade: Migrate to Supabase, Prisma, and Yup",
+        "description": "Execute a comprehensive technology stack migration from Neon/Drizzle to a Supabase/Prisma stack to leverage integrated services, improve developer experience, and enhance system reliability. This includes migrating the database, ORM, validation libraries, and storage systems to create a more integrated and maintainable architecture.",
+        "status": "pending",
+        "dependencies": [
+          3,
+          4
+        ],
+        "priority": "medium",
+        "details": "This task involves a complete overhaul of the backend infrastructure across five distinct phases:\n\n**Phase 1: Database Migration**\n- Provision new Supabase project with PostgreSQL database\n- Configure Auth and Storage services in Supabase dashboard\n- Establish secure connection pooling using Supabase's built-in PgBouncer\n- Execute data migration from Neon using `pg_dump` and `psql`\n- Update environment variables for Supabase integration\n\n**Phase 2: ORM Migration (Drizzle to Prisma)**\n- Remove Drizzle dependencies\n- Install and initialize Prisma with PostgreSQL provider\n- Configure schema.prisma with Supabase connection\n- Introspect database and generate Prisma schema\n- Convert all database queries to use Prisma Client API\n- Implement Prisma migrations system\n\n**Phase 3: Validation Layer (Zod to Yup)**\n- Install Yup validation library\n- Replace all Drizzle Zod schemas with Yup equivalents\n- Enhance error handling and user feedback mechanisms\n- Update validation middleware to use Yup's methods\n\n**Phase 4: Storage Integration**\n- Migrate from local file system to Supabase Storage\n- Implement CDN integration for improved performance\n- Update all file upload/download logic\n- Configure proper access controls and security policies\n\n**Phase 5: Connection & Environment Optimization**\n- Implement advanced connection pooling strategies\n- Add comprehensive environment management\n- Enhance error handling and recovery mechanisms\n- Set up monitoring and logging infrastructure\n\n**Expected Benefits:**\n- 50% reduction in infrastructure complexity\n- Improved performance through native integrations\n- Enhanced developer experience with industry-standard tools\n- Better reliability with optimized connection handling\n- Future-proof architecture aligned with best practices",
+        "testStrategy": "**1. Pre-Migration Testing:**\n- Document current system performance metrics as baseline\n- Verify Supabase connectivity and schema introspection\n- Test Prisma Client basic operations in staging environment\n- Validate connection pooling configuration\n\n**2. Data Migration Verification:**\n- Compare table row counts between Neon and Supabase\n- Verify data integrity for complex relations\n- Test database performance under typical load\n- Validate all constraints and indexes\n\n**3. ORM Implementation Testing:**\n- Execute full test suite with new Prisma implementations\n- Verify all CRUD operations across entities\n- Test complex queries and relations\n- Measure query performance against baseline\n\n**4. Storage System Testing:**\n- Verify file upload/download functionality\n- Test CDN integration and performance\n- Validate access control policies\n- Measure file operation latency\n\n**5. Validation Layer Testing:**\n- Test all API endpoints with Yup validation\n- Verify error handling and messages\n- Test complex validation rules\n- Validate TypeScript integration\n\n**6. Integration Testing:**\n- End-to-end testing of all critical flows\n- Load testing of new infrastructure\n- Security testing of all integrations\n- Performance testing against baseline metrics",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Provision Supabase Project and Migrate Neon Database",
+            "description": "Set up a new Supabase project, including the PostgreSQL database, Auth, and Storage services. Migrate all existing data from the Neon database to the new Supabase instance and update environment configurations.",
+            "dependencies": [],
+            "details": "Provision a new Supabase project and configure its PostgreSQL database. Enable and configure Supabase Auth and Storage services in the dashboard. Configure the built-in PgBouncer for secure connection pooling. Use `pg_dump` to create a backup of the Neon database and `psql` to restore it into the Supabase database. Update all relevant environment variables (`DATABASE_URL`, etc.) to point to the new Supabase instance.",
+            "status": "pending",
+            "testStrategy": "Verify successful creation of the Supabase project and services. Connect to the new database to confirm connectivity. Perform a data integrity check by comparing record counts and sampling data between the old and new databases. Ensure environment variables are correctly loaded by the application in a staging environment."
+          },
+          {
+            "id": 2,
+            "title": "Replace Drizzle ORM with Prisma and Refactor Data Access Layer",
+            "description": "Systematically replace the Drizzle ORM with Prisma. This involves installing Prisma, generating a schema from the migrated database, and refactoring all data access logic to use the Prisma Client.",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Remove all Drizzle-related packages. Install and initialize Prisma with the PostgreSQL provider, configuring `schema.prisma` to connect to Supabase. Run `prisma db pull` to introspect the database and generate the schema. Systematically refactor all existing Drizzle queries throughout the codebase to use the equivalent Prisma Client API calls. Initialize Prisma Migrate by creating a baseline migration.",
+            "status": "pending",
+            "testStrategy": "Run `prisma generate` to ensure the client is created successfully. Execute a test suite for the data access layer, ensuring all CRUD operations work as expected with the new Prisma Client. Test complex queries, relations, and transactions to verify correct behavior."
+          },
+          {
+            "id": 3,
+            "title": "Migrate Validation Layer from Zod to Yup",
+            "description": "Replace the Zod validation library with Yup. This requires converting all existing Zod schemas to their Yup equivalents and updating the validation middleware and error handling to use Yup's API.",
+            "dependencies": [
+              "5.2"
+            ],
+            "details": "Remove the Zod package and install Yup. Go through all files containing Zod schemas and rewrite them using Yup's schema definition syntax. Update any middleware or service functions that perform validation to call Yup's methods. Refactor error handling logic to correctly parse and format validation errors thrown by Yup.",
+            "status": "pending",
+            "testStrategy": "Create unit tests for each new Yup schema, covering both valid and invalid data inputs. Test the validation middleware with various request bodies to ensure it correctly rejects invalid data. Verify that the format of validation error responses sent to the client is consistent and user-friendly."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Supabase Storage and Refactor File Handling",
+            "description": "Migrate file storage from the current local file system to Supabase Storage. This includes updating all file upload and retrieval logic and configuring appropriate security policies and CDN integration.",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Create storage buckets in the Supabase dashboard and configure access policies. Refactor all code responsible for file uploads to use the Supabase Storage client library. Update all logic that serves file links to use Supabase Storage URLs, leveraging the built-in CDN. Implement logic for handling file deletions and updates within Supabase Storage and configure Row Level Security (RLS) policies.",
+            "status": "pending",
+            "testStrategy": "Test file upload functionality for various file types and sizes. Verify that uploaded files can be successfully retrieved via their public or signed URLs. Test access control by attempting to access private files without proper authorization. Confirm that deleting a record in the application also correctly deletes the associated file from the storage bucket."
+          },
+          {
+            "id": 5,
+            "title": "Optimize Connections, Environment, and Monitoring",
+            "description": "Finalize the migration by implementing advanced connection management, robust environment configuration, and setting up comprehensive monitoring and logging for the new Supabase/Prisma stack.",
+            "dependencies": [
+              "5.1",
+              "5.2",
+              "5.3",
+              "5.4"
+            ],
+            "details": "Review and implement advanced connection pooling strategies if needed. Establish a secure process for managing environment variables for development, staging, and production. Enhance global error handling middleware to effectively catch and log errors from Prisma, Supabase, and Yup. Integrate a logging service to capture application and database logs. Set up monitoring dashboards to track key metrics like API response times and error rates.",
+            "status": "pending",
+            "testStrategy": "Conduct load testing to verify the connection pooling strategy under stress. Verify that environment variables for different stages are loaded correctly. Trigger various types of errors (database, validation, storage) and confirm they are logged correctly in the chosen monitoring service. Review monitoring dashboards to ensure they are correctly displaying performance data."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-07-23T16:59:29-04:00",
-      "updated": "2025-07-31T16:37:31.653Z",
+      "updated": "2025-07-31T16:53:19.658Z",
       "description": "Tasks for master context"
     }
   }
