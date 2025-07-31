@@ -174,11 +174,76 @@
             "testStrategy": "Use Lighthouse to verify performance and accessibility scores (target ≥95). Manually verify the existence and correctness of `/sitemap.xml`, `/feed.xml`, and `/openapi.json` after a production build. Use an accessibility checker tool like Axe to audit key pages for WCAG AA compliance."
           }
         ]
+      },
+      {
+        "id": 4,
+        "title": "Resolve \"Tenant or user not found\" Database Connection Crisis",
+        "description": "Systematically diagnose and resolve the Neon-specific \"Tenant or user not found\" database error through a series of radical solutions, starting with direct connection testing and progressing through multiple fallback options including provider migration, direct connections, and complete platform change if necessary.",
+        "status": "pending",
+        "dependencies": [
+          2
+        ],
+        "priority": "medium",
+        "details": "This is a critical incident requiring immediate action. The error indicates a fundamental connection string or database setup issue with Neon. Execute solutions in order until resolution is achieved.\n\n**1. Immediate Diagnostic Testing:**\n- Test direct database connection without application code:\n```bash\n# Test with pooler\npsql \"postgresql://neondb_owner:npg_TcbpP7ezUJu6@ep-dark-brook-ae83i5pz-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require\"\n\n# Test without pooler\npsql \"postgresql://neondb_owner:npg_TcbpP7ezUJu6@ep-dark-brook-ae83i5pz.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require\"\n```\n\n**2. Radical Solution Options (In Priority Order):**\n\nA. **Switch to Render PostgreSQL:**\n- Create new Render PostgreSQL instance (free tier)\n- Copy Internal Database URL\n- Update .env with new DATABASE_URL\n- No SSL configuration needed\n\nB. **Use Direct Neon Connection:**\n- Remove pooler from connection string\n- Update DATABASE_URL to use direct connection endpoint\n\nC. **Implement Emergency Mock Data:**\n```typescript\n// server/index.ts\nlet storage = {\n  getArticles: async () => ({\n    articles: [\n      { id: 1, title: \"Welcome to SafraReport\", content: \"Database coming soon\", category: \"news\" }\n    ],\n    total: 1\n  }),\n  getFeaturedArticles: async () => ({ articles: [], total: 0 }),\n  getBreakingNews: async () => ({ articles: [], total: 0 })\n};\n```\n\nD. **Migrate to Supabase:**\n- Create free Supabase project\n- Use connection string from Settings > Database\n- Leverage built-in web interface for table creation\n\n**3. Emergency Error Handling:**\n```typescript\n// Add to server/index.ts\napp.use((err, req, res, next) => {\n  console.error('Database error:', err);\n  res.json({ \n    error: \"Database temporarily unavailable\",\n    articles: [], \n    total: 0 \n  });\n});\n```\n\n**4. Nuclear Option:**\n- Create new GitHub repository\n- Deploy to Vercel platform\n- Implement Vercel Postgres for automatic database integration\n- Migrate existing data to new setup",
+        "testStrategy": "**1. Connection Verification:**\n- Document output of direct psql connection attempts (both pooler and non-pooler)\n- Verify database existence in Neon dashboard\n- Test password reset if needed\n- Confirm Neon account status\n\n**2. Solution Testing:**\n\nFor Render Migration:\n- Verify successful connection to new Render database\n- Test data migration integrity\n- Run full application test suite against new database\n\nFor Direct Neon Connection:\n- Confirm connection without pooler\n- Test all database-dependent endpoints\n\nFor Mock Data Implementation:\n- Verify all API endpoints return mock data\n- Confirm error handling returns appropriate responses\n- Test frontend functionality with mock responses\n\nFor Supabase Migration:\n- Verify SSL connection works out of the box\n- Test table creation and data migration\n- Run full application test suite\n\n**3. Emergency Handling Verification:**\n- Simulate database failures\n- Verify error middleware catches all database errors\n- Confirm frontend gracefully handles error responses\n\n**4. Platform Migration Testing:**\n- Verify Vercel deployment\n- Test Vercel Postgres connection\n- Validate complete application functionality in new environment",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Diagnose Neon Connection with Direct psql Tests",
+            "description": "Execute direct psql connection tests to the Neon database, both with and without the connection pooler, to isolate the 'Tenant or user not found' error and determine if the issue lies with the credentials, the service, or the pooler.",
+            "dependencies": [],
+            "details": "Use the provided psql commands to connect directly from a terminal. Document the exact output for both the pooler and non-pooler endpoints. Check the Neon project dashboard for any reported outages, status issues, or incorrect credentials. This is the foundational step to guide all subsequent actions.",
+            "status": "pending",
+            "testStrategy": "1. Execute `psql` command with the pooler URL. 2. Execute `psql` command with the direct (non-pooler) URL. 3. Document the success or failure, including any error messages, for both attempts. 4. Verify the Neon project status is 'Active' in the Neon console."
+          },
+          {
+            "id": 2,
+            "title": "Implement Graceful Error Handling for Database Unavailability",
+            "description": "Add emergency middleware to the Express server (server/index.ts) to catch database connection errors and return a user-friendly message and an empty data structure, preventing application crashes during the outage.",
+            "dependencies": [],
+            "details": "Implement the provided Express error handling middleware. This will intercept any errors propagated from the database layer and respond with a JSON object like `{ \"error\": \"Database temporarily unavailable\", \"articles\": [], \"total\": 0 }`. This improves user experience while the root cause is being addressed and can be implemented in parallel to diagnostics.",
+            "status": "pending",
+            "testStrategy": "1. Temporarily modify the DATABASE_URL in the .env file to be invalid. 2. Restart the server and make a request to an API endpoint that queries the database. 3. Verify the API returns a 200 OK status with the specified graceful error JSON response, and the server process does not crash."
+          },
+          {
+            "id": 3,
+            "title": "Execute Primary Fallback: Migrate to a New Render PostgreSQL Instance",
+            "description": "If direct Neon connection tests fail, execute the primary radical solution by creating a new PostgreSQL instance on Render and reconfiguring the application to use it.",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Provision a new PostgreSQL database on the Render platform (free tier is sufficient). Obtain the 'Internal Database URL' from the Render dashboard. Update the `DATABASE_URL` environment variable in the project's configuration. Redeploy the application to connect to the new database. This is the first-priority migration option as per the incident plan.",
+            "status": "pending",
+            "testStrategy": "1. After deployment with the new `DATABASE_URL`, verify the application starts without connection errors. 2. Use API endpoints to create a new test article. 3. Use API endpoints to fetch the list of articles and confirm the new test article is present. 4. Connect to the Render database directly to confirm data persistence."
+          },
+          {
+            "id": 4,
+            "title": "Execute Secondary Fallbacks: Attempt Neon Direct Connection or Implement Mock Data",
+            "description": "If the Render migration fails, attempt the next fallback options in order: first, try to connect to Neon using the direct (non-pooler) endpoint. If that also fails, implement a temporary mock data layer.",
+            "dependencies": [
+              "4.3"
+            ],
+            "details": "This subtask has two sequential steps. First, update the `DATABASE_URL` to use the Neon direct connection endpoint (removing '-pooler' from the hostname) and test. If this does not resolve the issue, proceed to modify `server/index.ts` to replace database calls with the provided hardcoded `storage` object to restore frontend functionality with static data.",
+            "status": "pending",
+            "testStrategy": "1. For the direct connection attempt, verify if API calls succeed after updating the `DATABASE_URL`. 2. If proceeding to mock data, verify that the API returns the hardcoded 'Welcome to SafraReport' article, allowing the frontend to render without a live database connection."
+          },
+          {
+            "id": 5,
+            "title": "Execute Final Fallbacks: Migrate to Supabase or Vercel Postgres",
+            "description": "As a last resort, if all previous solutions fail, execute the final contingency plan by migrating the database to Supabase, or as a nuclear option, redeploying the entire application on Vercel with Vercel Postgres.",
+            "dependencies": [
+              "4.4"
+            ],
+            "details": "This is the final step in the crisis resolution plan. First, attempt migration to a free Supabase project by creating the project, obtaining its connection string, and recreating the schema. If that fails, execute the nuclear option: create a new GitHub repository, deploy the project to Vercel, and integrate it with a new Vercel Postgres instance.",
+            "status": "pending",
+            "testStrategy": "1. For the chosen platform (Supabase or Vercel), verify the application connects successfully to the new database. 2. Perform a full suite of CRUD tests via the API to ensure all database interactions are functional. 3. Confirm the application is stable and performs as expected in the new environment."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-07-23T16:59:29-04:00",
-      "updated": "2025-07-31T16:32:45.565Z",
+      "updated": "2025-07-31T16:37:31.653Z",
       "description": "Tasks for master context"
     }
   }
