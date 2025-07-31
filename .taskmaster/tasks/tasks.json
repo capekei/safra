@@ -306,11 +306,79 @@
             "testStrategy": "Conduct load testing to verify the connection pooling strategy under stress. Verify that environment variables for different stages are loaded correctly. Trigger various types of errors (database, validation, storage) and confirm they are logged correctly in the chosen monitoring service. Review monitoring dashboards to ensure they are correctly displaying performance data."
           }
         ]
+      },
+      {
+        "id": 6,
+        "title": "Post-Migration Technology Stack Cleanup",
+        "description": "Perform a comprehensive audit and removal of unused technologies, packages, and code while preserving the protected technology stack. This ensures a lean, maintainable codebase free of technical debt and aligns with the project's current architecture.",
+        "status": "pending",
+        "dependencies": [
+          3,
+          5
+        ],
+        "priority": "medium",
+        "details": "This task focuses on systematically cleaning up the codebase while carefully preserving the protected technology stack.\n\n**1. Dependency Analysis:**\n- Run comprehensive analysis using multiple tools:\n  - `npm audit` and `npm outdated` for security and updates\n  - `depcheck` for unused dependencies\n  - `knip` for comprehensive dead code detection\n  - `ts-prune` for TypeScript-specific unused exports\n- Document all findings in Task-master\n- Cross-reference findings against protected stack list\n\n**2. Package Cleanup:**\n- Remove unused packages identified in analysis\n- Update outdated packages within same major version\n- Consolidate packages with duplicate functionality\n- Verify each removal against protected stack list:\n  Core: Node.js, React, Express, TypeScript, Vite, pnpm\n  Frontend: Radix UI, Tailwind CSS, React Query, React Hook Form, Wouter, Lucide React, Framer Motion, TipTap\n  Backend: PostgreSQL, Drizzle ORM, Drizzle Zod, Supabase Auth, bcrypt, JWT, CORS, Helmet, Multer\n  Dev Tools: Vitest, React Testing Library, Playwright, TypeScript strict mode, ts-prune, knip, Task-master AI\n\n**3. Code Cleanup:**\n- Remove dead imports and unused exports\n- Delete orphaned files and directories\n- Clean up unused TypeScript types\n- Remove commented-out code blocks\n- Consolidate duplicate utility functions\n- Document any edge cases or dependencies that need preservation\n\n**4. Configuration Cleanup:**\n- Remove unused configuration files\n- Clean up unused environment variables\n- Remove abandoned build scripts\n- Consolidate duplicate configurations\n- Update documentation to reflect current stack\n\n**5. Documentation Update:**\n- Update README.md to accurately reflect current stack\n- Document all removed items in changelog\n- Update architectural diagrams\n- Review and update developer onboarding documentation\n- Create protected stack documentation",
+        "testStrategy": "**1. Static Analysis Verification:**\n- Run complete suite of analysis tools again:\n  - `depcheck` for dependencies\n  - `knip` for dead code\n  - `ts-prune` for TypeScript exports\n  - `npm audit` for security\n- Verify no protected packages were removed\n\n**2. Build and Lint Integrity:**\n- Execute `pnpm build` from the monorepo root\n- Run `pnpm lint --fix`\n- Verify all protected functionality remains intact\n\n**3. Full Test Suite Execution:**\n- Run complete automated test suite\n- Verify all tests pass without errors\n- Check test coverage remains consistent\n\n**4. Protected Stack Verification:**\n- Manually verify each protected package is still properly configured\n- Test core functionality of each protected package\n- Verify all integrations between protected packages work correctly\n\n**5. Deployment and Integration Testing:**\n- Deploy to staging environment\n- Perform comprehensive smoke test\n- Verify CI/CD pipeline functionality\n- Document any issues or regressions",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Conduct Dependency and Security Audit",
+            "description": "Perform a comprehensive analysis of all project dependencies to identify unused packages, security vulnerabilities, and outdated libraries, creating a clear action plan for cleanup.",
+            "dependencies": [],
+            "details": "Use `depcheck` and `knip` to find unused dependencies. Use `npm audit` for security vulnerabilities and `npm outdated` for version checks. Cross-reference all findings against the protected stack list (Core, Frontend, Backend, Dev Tools) to create a definitive list of packages to be removed, updated, or investigated. Document all findings in Task-master.",
+            "status": "pending",
+            "testStrategy": "Review the generated reports from `depcheck`, `knip`, and `npm audit` to ensure they are complete. Manually verify that no protected packages are flagged for removal in the final action plan."
+          },
+          {
+            "id": 2,
+            "title": "Execute Package Cleanup and Consolidation",
+            "description": "Systematically remove all unused and redundant packages identified in the audit phase, and update outdated packages where safe to do so.",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Based on the audit from subtask 6.1, remove all confirmed unused packages using `pnpm remove`. Update packages to the latest minor/patch version to incorporate bug fixes and security patches without introducing breaking changes. Consolidate any packages with overlapping functionality. Each removal must be checked against the protected stack list to prevent accidental deletion of critical dependencies.",
+            "status": "pending",
+            "testStrategy": "After removal, run `pnpm install` to ensure the lockfile is consistent. Execute the full test suite (Vitest, Playwright) and run the build command (`vite build`) to confirm no regressions were introduced."
+          },
+          {
+            "id": 3,
+            "title": "Eliminate Dead Code and Orphaned Files",
+            "description": "Remove all dead code, including unused exports, functions, types, and orphaned files, to reduce the codebase size and improve maintainability.",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "Use the reports from `knip` and `ts-prune` to identify and remove dead code, such as unused exports, functions, and variables. Manually search for and delete entire files and directories that are no longer imported or used anywhere in the project. Remove commented-out code blocks that are not explanatory comments. Consolidate any duplicate utility functions into a shared module.",
+            "status": "pending",
+            "testStrategy": "Run `knip` and `ts-prune` again to confirm that their reports are now clean. Perform a full lint and type-check (`tsc --noEmit`) to catch any resulting errors. Manually review the changes to ensure no necessary logic was accidentally removed."
+          },
+          {
+            "id": 4,
+            "title": "Streamline Configuration and Build Scripts",
+            "description": "Audit and clean up all configuration files, environment variables, and build scripts to align with the current, simplified technology stack.",
+            "dependencies": [
+              "6.3"
+            ],
+            "details": "Review all configuration files (e.g., `vite.config.ts`, `tsconfig.json`, `.env` files, CI/CD pipelines) and remove any settings, plugins, or scripts related to removed technologies. Delete unused environment variables from `.env.example` and deployment configurations. Remove any abandoned or redundant scripts from `package.json`.",
+            "status": "pending",
+            "testStrategy": "Execute all scripts in `package.json` (e.g., `dev`, `build`, `test`, `lint`) to ensure they all run correctly. Run the application locally and in a staging environment to verify that it starts and operates as expected with the cleaned-up configuration."
+          },
+          {
+            "id": 5,
+            "title": "Update Documentation and Finalize Stack Verification",
+            "description": "Update all project documentation to reflect the cleaned-up technology stack and perform a final verification of the entire codebase.",
+            "dependencies": [
+              "6.4"
+            ],
+            "details": "Update `README.md` with the final list of technologies, libraries, and tools. Create a new `CHANGELOG.md` entry documenting all removed packages and significant refactors. Create a new document, `PROTECTED_STACK.md`, that formally lists the technologies that must be preserved. Review and update developer onboarding guides.",
+            "status": "pending",
+            "testStrategy": "Peer review all updated documentation for clarity and accuracy. Run the full static analysis suite (`depcheck`, `knip`, `ts-prune`, `npm audit`) one last time to generate a final \"clean\" report, confirming that no new issues were introduced and all cleanup goals were met."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-07-23T16:59:29-04:00",
-      "updated": "2025-07-31T16:53:19.658Z",
+      "updated": "2025-07-31T16:57:58.673Z",
       "description": "Tasks for master context"
     }
   }
