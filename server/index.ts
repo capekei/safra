@@ -1,3 +1,6 @@
+// CRITICAL: Disable SSL certificate verification for Neon database
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
+
 import * as dotenv from 'dotenv';
 dotenv.config();
 
