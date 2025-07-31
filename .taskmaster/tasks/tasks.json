@@ -106,11 +106,79 @@
             "testStrategy": "Run full test suite in both development and staging environments before deployment"
           }
         ]
+      },
+      {
+        "id": 3,
+        "title": "Complete Monorepo Restructuring and Architectural Refactor",
+        "description": "Overhaul the Safra monorepo to establish a clear architecture with feature-based frontend organization, layered backend, and shared typing, while implementing comprehensive performance, accessibility, SEO, and GEO optimizations.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2
+        ],
+        "priority": "medium",
+        "details": "This task involves a complete restructuring of the Safra monorepo following specific organizational and architectural patterns.\n\n**1. Root Organization:**\n- Execute `scripts/maintenance/dr-organize-root-safe.sh` to create and organize core directories (`docs/`, `scripts/`, `config/`, `tools/`).\n- Ensure no orphaned files remain in the root directory.\n- Document changes in `docs/changelog.md`.\n\n**2. Frontend Feature-Based Architecture:**\n- Restructure `client/src/` to use feature-based organization:\n  - Replace `components/`, `pages/`, `lib/` with `features/<domain>/{components,pages,hooks,services}`\n  - Create `layouts/` for global wrappers\n  - Add `ui/` directory for atomic components (Button, Input)\n- Configure path aliases (`@features/*`, `@ui/*`)\n\n**3. Backend Layered Architecture:**\n- Reorganize `server/*.ts` into clear layers:\n  - `routes/` - API route definitions\n  - `controllers/` - Request handling\n  - `services/` - Business logic\n  - `models/` - Drizzle schemas\n  - `middlewares/` - Request/response middleware\n  - `utils/` - Helper functions\n\n**4. Shared Type System:**\n- Create `packages/shared` package containing:\n  - Drizzle schemas exported as Zod\n  - DTO/endpoint types\n  - Common enums\n- Configure pnpm workspaces\n- Update client and server to import from `@safra/shared`\n\n**5. Performance & Optimization:**\n- Implement image lazy-loading\n- Configure manual code-splitting in `vite.config.ts` (vendor/ui/editor chunks)\n- Apply PurgeCSS optimization\n\n**6. SEO & GEO Implementation:**\n- Install and configure `vite-plugin-sitemap`\n- Generate `/sitemap.xml` during build\n- Create RSS feed at `/feed.xml`\n- Implement dynamic meta tags using `react-helmet-async`\n- Expose OpenAPI 3 spec at `/openapi.json`\n\n**7. Accessibility Improvements:**\n- Implement high-contrast variables\n- Add ARIA attributes to components\n- Target WCAG AA compliance with score ≥95\n\n**8. CI/CD & Testing:**\n- Configure GitHub Actions workflow for:\n  - Linting\n  - Type checking\n  - Frontend unit tests\n  - Playwright smoke tests\n- Ensure strict TypeScript usage (no `any`)",
+        "testStrategy": "**1. Build & Static Analysis:**\n- Verify `pnpm install && pnpm build` completes without warnings\n- Confirm all path aliases are correctly configured\n- Run TypeScript in strict mode across all packages\n\n**2. Feature Testing:**\n- Verify all routes continue to function after restructuring\n- Test feature-based imports and cross-module dependencies\n- Validate shared type usage between client and server\n\n**3. Performance & Accessibility Testing:**\n- Run Lighthouse audits targeting:\n  - Performance ≥ 90\n  - Accessibility ≥ 95\n  - Best-Practices ≥ 90\n  - SEO ≥ 95\n- Test with mobile configuration\n- Verify lazy loading and code splitting implementation\n\n**4. SEO & Documentation Verification:**\n- Validate generated sitemap.xml\n- Check RSS feed validity\n- Verify OpenAPI spec completeness at /openapi.json\n- Confirm meta tags in HTML source\n\n**5. CI/CD Pipeline Validation:**\n- Run complete GitHub Actions workflow\n- Verify all Playwright smoke tests pass\n- Confirm Jest test suite execution\n\n**6. Final Acceptance Criteria:**\n- No orphaned files in repository root\n- All build processes complete successfully\n- Documentation updated in changelog.md\n- All specified Lighthouse score thresholds met",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Establish Monorepo Foundation and CI/CD Pipeline",
+            "description": "Set up the foundational structure of the monorepo by organizing the root directory, configuring pnpm workspaces, and implementing a CI/CD workflow for automated checks.",
+            "dependencies": [],
+            "details": "Execute `scripts/maintenance/dr-organize-root-safe.sh` to create core directories. Ensure no orphaned files remain. Configure pnpm workspaces in the root `pnpm-workspace.yaml`. Set up a GitHub Actions workflow for linting, strict type-checking (no `any`), and running initial test suites. Document changes in `docs/changelog.md`.",
+            "status": "pending",
+            "testStrategy": "Verify the `dr-organize-root-safe.sh` script completes successfully. Confirm the GitHub Actions workflow triggers on push/PR and that linting/type-checking jobs pass on the initial codebase. Ensure `pnpm install` works correctly across the workspace."
+          },
+          {
+            "id": 2,
+            "title": "Create and Integrate Shared Types Package",
+            "description": "Develop the `@safra/shared` package to centralize Drizzle schemas (exported as Zod), DTOs, and common enums, ensuring a single source of truth for types across the monorepo.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Create a new package in `packages/shared`. Define Drizzle schemas and configure a build process to export them as Zod schemas. Add shared DTO/endpoint types and common enums. Update the root `tsconfig.json` to recognize the new package alias.",
+            "status": "pending",
+            "testStrategy": "Build the `@safra/shared` package successfully using `pnpm --filter @safra/shared build`. Run TypeScript in strict mode on the package to ensure all types are valid and exported correctly."
+          },
+          {
+            "id": 3,
+            "title": "Refactor Backend to a Layered Architecture",
+            "description": "Reorganize the entire server-side codebase into a clean, layered architecture and integrate the new shared types package for data modeling and validation.",
+            "dependencies": [
+              "3.2"
+            ],
+            "details": "Migrate existing server logic into `routes/`, `controllers/`, `services/`, `models/`, `middlewares/`, and `utils/` directories. Replace all local type definitions and models with imports from the `@safra/shared` package. Update database connection logic and business logic to use the shared schemas.",
+            "status": "pending",
+            "testStrategy": "Verify all API endpoints continue to function as expected after the refactor. Run Playwright smoke tests targeting API functionality. Confirm that all imports from `@safra/shared` resolve and are correctly typed. Ensure the server builds without type errors."
+          },
+          {
+            "id": 4,
+            "title": "Refactor Frontend to a Feature-Based Architecture",
+            "description": "Restructure the client application from a traditional component/page structure to a scalable feature-based organization, and integrate the shared types package.",
+            "dependencies": [
+              "3.2"
+            ],
+            "details": "Deconstruct `client/src/` and reorganize code into `features/<domain>/`, `ui/` (for atomic components), and `layouts/`. Configure Vite/TypeScript path aliases (`@features/*`, `@ui/*`). Refactor components and services to import DTOs and types from `@safra/shared` instead of local definitions.",
+            "status": "pending",
+            "testStrategy": "Verify all application routes and UI components render and function correctly post-restructuring. Confirm that all new path aliases resolve correctly during build and in the IDE. Run all frontend unit tests and Playwright smoke tests to ensure no regressions."
+          },
+          {
+            "id": 5,
+            "title": "Implement Web Optimizations, SEO, and Accessibility",
+            "description": "Enhance the refactored application with comprehensive performance, SEO, and accessibility improvements to meet modern web standards and compliance goals.",
+            "dependencies": [
+              "3.4"
+            ],
+            "details": "Performance: Implement image lazy-loading, configure manual code-splitting in `vite.config.ts` for vendor/ui/editor chunks, and apply PurgeCSS. SEO/GEO: Install and configure `vite-plugin-sitemap`, generate RSS feed, implement dynamic meta tags with `react-helmet-async`, and expose an OpenAPI 3 spec. Accessibility: Implement high-contrast theme variables, add ARIA attributes to UI components, and target a WCAG AA score of ≥95.",
+            "status": "pending",
+            "testStrategy": "Use Lighthouse to verify performance and accessibility scores (target ≥95). Manually verify the existence and correctness of `/sitemap.xml`, `/feed.xml`, and `/openapi.json` after a production build. Use an accessibility checker tool like Axe to audit key pages for WCAG AA compliance."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-07-23T16:59:29-04:00",
-      "updated": "2025-07-31T15:40:21.778Z",
+      "updated": "2025-07-31T16:32:45.565Z",
       "description": "Tasks for master context"
     }
   }
