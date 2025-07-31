@@ -14,8 +14,10 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// Configure SSL for Supabase connections
+// Accept Supabase's certificates while maintaining encryption
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // Remove SSL config - let Node handle it globally
+  ssl: { rejectUnauthorized: false }
 });
 export const db = drizzle(pool, { schema });

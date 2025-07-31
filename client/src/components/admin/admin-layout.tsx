@@ -27,11 +27,11 @@ interface AdminLayoutProps {
 export function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await signOut();
+      await logout();
       window.location.href = '/';
     } catch (error) {
       console.error('Error cerrando sesión:', error);
@@ -152,7 +152,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             {user && (
               <div className="flex items-center gap-3 mb-4 px-4">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user?.profileImageUrl} />
+                  <AvatarImage src={undefined} />
                   <AvatarFallback>{user?.firstName?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>

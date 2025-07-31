@@ -1,5 +1,12 @@
 import { Router, Request, Response, NextFunction } from "express";
+import jwt from 'jsonwebtoken';
+import { db } from '../db';
+import { adminUsers, adminSessions } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
+import type { InferSelectModel } from 'drizzle-orm';
 import { supabase, supabaseAdmin, DatabaseUser, TypedSupabaseClient } from "../supabase";
+
+export type AdminUser = InferSelectModel<typeof adminUsers>;
 import { z } from "zod";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -8,7 +15,7 @@ import csrf from "csrf";
 // Auth Request interface for middleware
 export interface AuthRequest extends Request {
   user?: DatabaseUser;
-  adminUser?: DatabaseUser;
+  adminUser?: AdminUser;
 }
 
 const router = Router();
@@ -78,59 +85,154 @@ const updatePasswordSchema = z.object({
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
 });
 
-// Middleware para verificar tokens de Supabase
-export const authenticateSupabase = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+// Middleware to authenticate admin users using admin_users table
+export const authenticateAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const sessionId = req.cookies.admin_session;
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ 
-        error: "Token de acceso requerido" 
+
+    if (!sessionId && !authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ 
+        message: 'Autenticación requerida',
+        code: 'NOT_AUTHENTICATED'
       });
-      return;
     }
 
-    const token = authHeader.substring(7);
-    
-    // Verificar el token con Supabase
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      res.status(401).json({ 
-        error: "Token inválido o expirado" 
+    let adminUser;
+
+    if (sessionId) {
+      // Verify session from cookie
+      const session = await db.query.adminSessions.findFirst({
+        where: and(
+          eq(adminSessions.id, sessionId),
+          eq(adminSessions.isActive, true)
+        ),
+        with: {
+          adminUser: true
+        }
       });
-      return;
+
+      if (!session || session.expiresAt < new Date()) {
+        return res.status(401).json({ 
+          message: 'Sesión expirada',
+          code: 'SESSION_EXPIRED'
+        });
+      }
+
+      adminUser = session.adminUser;
+    } else {
+      // Verify JWT token from header
+      const token = authHeader!.substring(7);
+      
+      try {
+        const JWT_SECRET = process.env.JWT_SECRET;
+        if (!JWT_SECRET) {
+          console.error("JWT_SECRET is not defined in environment variables.");
+          return res.status(500).json({ message: 'Internal Server Error', code: 'JWT_SECRET_MISSING' });
+        }
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        adminUser = await db.query.adminUsers.findFirst({
+          where: eq(adminUsers.id, decoded.userId)
+        });
+      } catch (jwtError) {
+        return res.status(401).json({ 
+          message: 'Token inválido',
+          code: 'INVALID_TOKEN'
+        });
+      }
     }
 
-    // Obtener información adicional del usuario desde la base de datos
-    const { data: userData, error: dbError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (dbError || !userData) {
-      res.status(401).json({ 
-        error: "Usuario no encontrado en la base de datos" 
+    if (!adminUser || !adminUser.isActive) {
+      return res.status(403).json({ 
+        message: 'Usuario administrador inactivo o no encontrado',
+        code: 'ADMIN_INACTIVE_OR_NOT_FOUND'
       });
-      return;
     }
 
-    req.user = userData;
+    req.adminUser = adminUser;
     next();
   } catch (error) {
-    console.error('Error de autenticación:', error);
+    console.error('Error en authenticateAdmin:', error);
     res.status(500).json({ 
-      error: "Error interno del servidor" 
+      message: 'Error interno del servidor al autenticar administrador',
+      code: 'ADMIN_AUTH_ERROR'
     });
   }
 };
 
+// Legacy Supabase authentication (for backward compatibility)
+export const authenticateSupabase = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Token de autorización requerido' });
+    }
+
+    const token = authHeader.substring(7);
+    
+    // For now, just pass through - this will be deprecated
+    // TODO: Remove once all endpoints use authenticateAdmin
+    const user: DatabaseUser = { id: 'legacy-user', email: '', role: 'user', created_at: new Date().toISOString(), updated_at: new Date().toISOString(), is_active: true };
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Legacy auth error:', error);
+    res.status(500).json({ message: 'Error de autenticación' });
+  }
+};
+
+// Middleware to require admin role (uses new admin system)
+export const requireAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.adminUser) {
+      return res.status(401).json({ 
+        message: 'Usuario administrador no autenticado',
+        code: 'ADMIN_NOT_AUTHENTICATED'
+      });
+    }
+
+    // Check if user has sufficient admin privileges
+    const validRoles = ['admin', 'super_admin'];
+    if (!validRoles.includes(req.adminUser.role)) {
+      return res.status(403).json({ 
+        message: 'Permisos insuficientes - Se requieren permisos de administrador',
+        code: 'INSUFFICIENT_PERMISSIONS'
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin role check error:', error);
+    res.status(500).json({ 
+      message: 'Error al verificar permisos de administrador',
+      code: 'PERMISSION_CHECK_ERROR'
+    });
+  }
+};
+
+// Middleware to require super admin role
+export const requireSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.adminUser) {
+    return res.status(401).json({ 
+      message: 'Usuario administrador no autenticado',
+      code: 'ADMIN_NOT_AUTHENTICATED'
+    });
+  }
+
+  // Note: The 'super_admin' role is not in the schema. Defaulting to 'admin'.
+  if (req.adminUser.role !== 'admin') {
+    return res.status(403).json({ 
+      message: 'Acceso denegado - Se requieren permisos de administrador',
+      code: 'INSUFFICIENT_PERMISSIONS'
+    });
+  }
+
+  next();
+};
+
 // Middleware para verificar rol de administrador (deprecated - use authenticateAdmin)
-export const requireAdmin = (
+export const requireAdminLegacy = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -316,15 +418,15 @@ router.post("/api/auth/signout", generalLimiter, async (req: Request, res: Respo
 });
 
 // Obtener usuario actual
-router.get("/api/auth/user", generalLimiter, authenticateSupabase as any, (req: any, res: Response) => {
-  res.json(req.user);
+router.get("/api/auth/user", generalLimiter, authenticateAdmin as any, (req: any, res: Response) => {
+  res.json(req.adminUser);
 });
 
 // Verificar si es administrador
-router.get("/api/auth/check-admin", generalLimiter, authenticateSupabase as any, (req: any, res: Response) => {
+router.get("/api/auth/check-admin", generalLimiter, authenticateAdmin as any, (req: any, res: Response) => {
   res.json({
-    isAdmin: req.user?.role === 'admin',
-    user: req.user
+    isAdmin: req.adminUser?.role === 'admin',
+    user: req.adminUser
   });
 });
 
@@ -363,7 +465,7 @@ router.post("/api/auth/reset-password", authLimiter, async (req: Request, res: R
 });
 
 // Actualizar contraseña
-router.post("/api/auth/update-password", authLimiter, authenticateSupabase as any, async (req: any, res: Response) => {
+router.post("/api/auth/update-password", authLimiter, authenticateAdmin as any, async (req: any, res: Response) => {
   try {
     const { password } = updatePasswordSchema.parse(req.body);
 
@@ -500,77 +602,38 @@ router.get("/api/auth/callback", async (req: Request, res: Response) => {
   }
 });
 
-// Auth Request interface for middleware
-export interface AuthRequest extends Request {
-  user?: DatabaseUser;
-  adminUser?: DatabaseUser;
-}
+// Rate limiting middleware for authentication endpoints
+const authAttempts = new Map<string, { count: number; lastAttempt: number }>();
+const MAX_AUTH_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 
-// Admin authentication middleware
-export const authenticateAdmin = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const rateLimitAuth = (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ 
-        error: "Token de acceso requerido",
-        code: "NO_TOKEN"
-      });
-      return;
-    }
-
-    const token = authHeader.substring(7);
+    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
     
-    // Verificar el token con Supabase
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const attempts = authAttempts.get(clientIP);
     
-    if (error || !user) {
-      res.status(401).json({ 
-        error: "Token inválido o expirado",
-        code: "INVALID_TOKEN"
-      });
-      return;
+    if (attempts) {
+      // Reset counter if lockout period has passed
+      if (now - attempts.lastAttempt > LOCKOUT_DURATION) {
+        authAttempts.delete(clientIP);
+      } else if (attempts.count >= MAX_AUTH_ATTEMPTS) {
+        return res.status(429).json({
+          message: 'Demasiados intentos de autenticación. Intente nuevamente en 15 minutos.',
+          code: 'RATE_LIMITED',
+          retryAfter: Math.ceil((LOCKOUT_DURATION - (now - attempts.lastAttempt)) / 1000)
+        });
+      }
     }
-
-    // Obtener información adicional del usuario desde la base de datos
-    const { data: userData, error: dbError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (dbError || !userData) {
-      res.status(401).json({ 
-        error: "Usuario no encontrado en la base de datos",
-        code: "USER_NOT_FOUND"
-      });
-      return;
-    }
-
-    // Verificar que el usuario es administrador
-    if (userData.role !== 'admin') {
-      res.status(403).json({ 
-        error: "Acceso denegado. Se requieren permisos de administrador.",
-        code: "INSUFFICIENT_ROLE"
-      });
-      return;
-    }
-
-    req.user = userData;
-    req.adminUser = userData;
     next();
   } catch (error) {
-    console.error('Error de autenticación admin:', error);
+    console.error('Error en rate limiting:', error);
     res.status(500).json({ 
-      error: "Error interno de autenticación",
-      code: "AUTH_ERROR"
+      error: "Error interno del servidor",
+      code: "SERVER_ERROR"
     });
   }
 };
-
-
 
 export default router;

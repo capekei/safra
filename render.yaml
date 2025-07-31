@@ -5,14 +5,17 @@ services:
     plan: free
     buildCommand: npm ci --production=false && npm run build
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 4000
       - key: DATABASE_URL
-        value: postgresql://postgres:O1hM7aGzQhb3Kws1@aws-0-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require
+        value: postgresql://neondb_owner:npg_TcbpP7ezUJu6@ep-dark-brook-ae83i5pz-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require
       - key: SESSION_SECRET
+        generateValue: true
+      - key: JWT_SECRET
         generateValue: true
       - key: VITE_SUPABASE_URL
         value: https://qolgaptebconzwwgjagm.supabase.co
@@ -20,3 +23,15 @@ services:
         value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvbGdhcHRlYmNvbnp3d2dqYWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3ODQzNzMsImV4cCI6MjA2ODM2MDM3M30.YeA76guDdhsKEKplNuMABCMQN8k8IgnyHW8su10iA38
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: SUPABASE_CA_CERT
+        sync: false
+      - key: NODE_TLS_REJECT_UNAUTHORIZED
+        value: "0"
+      - key: FRONTEND_URL
+        value: https://safrareport.onrender.com
+      - key: LOG_LEVEL
+        value: info
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100

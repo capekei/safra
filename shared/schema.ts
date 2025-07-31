@@ -53,14 +53,7 @@ export const categories = pgTable("categories", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const authors = pgTable("authors", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  bio: text("bio"),
-  avatar: text("avatar"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+// Authors table removed - using users table instead
 
 export const articles = pgTable("articles", {
   id: serial("id").primaryKey(),
@@ -74,7 +67,7 @@ export const articles = pgTable("articles", {
   isFeatured: boolean("is_featured").default(false),
   published: boolean("published").default(false),
   publishedAt: timestamp("published_at"),
-  authorId: integer("author_id").references(() => authors.id).notNull(),
+  authorId: varchar("author_id").references(() => users.id).notNull(), // References users table
   categoryId: integer("category_id").references(() => categories.id).notNull(),
   categoryIds: integer("category_ids").array(), // Multiple categories
   provinceId: integer("province_id").references(() => provinces.id), // Region/Province
@@ -173,18 +166,16 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
   articles: many(articles),
 }));
 
-export const authorsRelations = relations(authors, ({ many }) => ({
-  articles: many(articles),
-}));
+// Authors relations removed - using users table instead
 
 export const articlesRelations = relations(articles, ({ one }) => ({
-  author: one(authors, {
-    fields: [articles.authorId],
-    references: [authors.id],
-  }),
   category: one(categories, {
     fields: [articles.categoryId],
     references: [categories.id],
+  }),
+  province: one(provinces, {
+    fields: [articles.provinceId],
+    references: [provinces.id],
   }),
 }));
 
@@ -237,10 +228,7 @@ export const insertCategorySchema = createInsertSchema(categories).omit({
   createdAt: true,
 });
 
-export const insertAuthorSchema = createInsertSchema(authors).omit({
-  id: true,
-  createdAt: true,
-});
+// Author schema removed - using users table instead
 
 export const insertArticleSchema = createInsertSchema(articles).omit({
   id: true,
@@ -274,8 +262,7 @@ export const insertReviewSchema = createInsertSchema(reviews).omit({
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 
-export type Author = typeof authors.$inferSelect;
-export type InsertAuthor = z.infer<typeof insertAuthorSchema>;
+// Author types removed - using users table instead
 
 export type Article = typeof articles.$inferSelect;
 export type InsertArticle = z.infer<typeof insertArticleSchema>;
@@ -295,8 +282,20 @@ export type InsertReview = z.infer<typeof insertReviewSchema>;
 
 // Extended types for API responses with joins
 export type ArticleWithRelations = Article & {
-  author: Author | null;
-  category: Category | null;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+    icon: string;
+    description: string | null;
+    createdAt: Date;
+  } | null;
+  province?: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
+  authorUsername?: string | null;
 };
 
 export type ClassifiedWithRelations = Classified & {
@@ -309,19 +308,34 @@ export type BusinessWithRelations = Business & {
   province: Province | null;
 };
 
+export type ReviewWithRelations = Review & {
+  user?: User | null;
+  business?: Business | null;
+};
+
+export type UserReviewWithBusiness = Review & {
+  business: Business | null;
+};
+
+export type UserClassified = Classified & {
+  category: ClassifiedCategory | null;
+  province: Province | null;
+};
+
 // Admin users table for CMS
 export const adminUsers = pgTable("admin_users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   username: text("username").notNull().unique(),
-  auth0Id: varchar("auth0_id").unique(), // Link to Auth0 user ID
+  passwordHash: text("password_hash").notNull(), // bcrypt hashed password
+  auth0Id: varchar("auth0_id").unique(), // Link to Auth0 user ID (optional)
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
-  role: text("role").notNull().default("editor"), // admin, editor, moderator
+  role: text("role").notNull().default("editor"), // super_admin, admin, editor, moderator
   avatar: text("avatar"),
   replitId: text("replit_id").unique(),
-  active: boolean("active").default(true),
-  lastLogin: timestamp("last_login"),
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -356,13 +370,15 @@ export const moderationQueue = pgTable("moderation_queue", {
 
 // Admin sessions for JWT
 export const adminSessions = pgTable("admin_sessions", {
-  id: serial("id").primaryKey(),
+  id: text("id").primaryKey(), // Use text ID for session IDs
   adminUserId: integer("admin_user_id").references(() => adminUsers.id).notNull(),
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
+  isActive: boolean("is_active").default(true),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Relations for admin tables
@@ -398,7 +414,7 @@ export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-  lastLogin: true,
+  lastLoginAt: true,
 });
 
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({

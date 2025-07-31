@@ -14,15 +14,22 @@ import { useToast } from "@/hooks/use-toast";
 import { MainSidebar } from "@/components/sidebar-cards";
 import type { ArticleWithRelations } from "@/lib/types";
 
+import { useI18n } from "@/lib/i18n";
+
+// ... (imports)
+
 export default function Home() {
+  const t = useI18n();
   console.log('🏠 SafraReport Home: Starting Home component render');
   
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
   const [page, setPage] = useState(0);
   const { toast } = useToast();
 
+  const [featuredError, setFeaturedError] = useState<string | null>(null);
+
   // Fetch featured articles with deployment configuration
-  const { data: featuredArticles, isLoading: isLoadingFeatured, error: featuredError } = useQuery<ArticleWithRelations[]>({
+  const { data: featuredArticles, isLoading: isLoadingFeatured } = useQuery<ArticleWithRelations[]>({
     queryKey: ["/api/articles/featured"],
     queryFn: () => {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
@@ -33,7 +40,14 @@ export default function Home() {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       }).then(res => {
-        if (!res.ok) throw new Error(`Error al conectar: HTTP ${res.status}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            setFeaturedError("No se encontraron artículos destacados.");
+          } else {
+            setFeaturedError(`Error al conectar: HTTP ${res.status}`);
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
         return res.json();
       });
     },
@@ -47,18 +61,19 @@ export default function Home() {
     if (featuredError) {
       console.error("Error al cargar artículos destacados:", featuredError);
       toast({
-        title: "Error de conexión", 
-        description: "No se pudieron cargar los artículos destacados. Verifica tu conexión a internet.",
+        title: t.connectionError, 
+        description: featuredError,
         variant: "destructive",
       });
     }
   }, [featuredError, toast]);
 
+  const [articlesError, setArticlesError] = useState<string | null>(null);
+
   // Fetch regular articles with deployment-specific configuration
   const { 
     data: articles, 
     isLoading: isLoadingArticles,
-    error: articlesError 
   } = useQuery<ArticleWithRelations[]>({
     queryKey: ['/api/articles', page, activeCategory],
     queryFn: () => {
@@ -90,6 +105,7 @@ export default function Home() {
             url: fullUrl,
             body: errorText
           });
+          setArticlesError(`Error de base de datos en despliegue. Verifica secrets: HTTP ${res.status} - ${res.statusText}`);
           throw new Error(`Error de base de datos en despliegue. Verifica secrets: HTTP ${res.status} - ${res.statusText}`);
         }
         return res.json();
@@ -107,8 +123,8 @@ export default function Home() {
       console.error("🌐 Current URL:", window.location.href);
       console.error("🔧 Environment:", import.meta.env.MODE);
       toast({
-        title: "Error de conexión",
-        description: "No se pudieron cargar los artículos. Verifica tu conexión a internet.", 
+        title: t.connectionError,
+        description: articlesError, 
         variant: "destructive",
       });
     }
@@ -167,9 +183,14 @@ export default function Home() {
               </div>
             ) : featuredArticles && featuredArticles.length > 0 ? (
               <HeroArticle article={featuredArticles[0]} />
+            ) : featuredError ? (
+              <div className="mb-12 text-center py-8">
+                <p className="text-red-500">{featuredError}</p>
+              </div>
             ) : (
               <div className="mb-12 text-center py-8">
-                <p className="text-gray-500">No hay artículos destacados disponibles.</p>
+                <p className="text-gray-500">{t.noFeaturedArticles}</p>
+                <p className="text-gray-400 text-sm">{t.tryAgainLater}</p>
               </div>
             )}
 
@@ -189,14 +210,14 @@ export default function Home() {
               </div>
             ) : articlesError ? (
               <div className="text-center py-12">
-                <p className="text-red-500 text-lg">Error al cargar artículos</p>
-                <p className="text-gray-600 mt-2">Por favor, verifica tu conexión a internet y recarga la página.</p>
+                <p className="text-red-500 text-lg">{articlesError}</p>
+                <p className="text-gray-600 mt-2">{t.articlesError}</p>
                 <Button 
                   onClick={() => window.location.reload()} 
                   className="mt-4"
                   variant="outline"
                 >
-                  Recargar página
+                  {t.reload}
                 </Button>
               </div>
             ) : (

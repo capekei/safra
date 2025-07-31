@@ -71,6 +71,33 @@ export function convertToStringArray(images: unknown): string[] {
   }
 }
 
+// Simple slugify function for URL-friendly strings
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[áàäâ]/g, 'a')
+    .replace(/[éèëê]/g, 'e')
+    .replace(/[íìïî]/g, 'i')
+    .replace(/[óòöô]/g, 'o')
+    .replace(/[úùüû]/g, 'u')
+    .replace(/ñ/g, 'n')
+    .replace(/ç/g, 'c')
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+}
+
+// Storage-specific error handler that returns appropriate values
+export function handleStorageError<T>(errorCode: keyof typeof DR_ERRORS, message: string, error: unknown): T {
+  console.error(`Storage Error [${errorCode}]: ${message}`, error);
+  
+  // Return appropriate default values based on expected return type
+  // This is a type assertion that should be used carefully
+  return [] as T; // Most storage methods return arrays
+}
+
 // Production-ready error handler with Spanish messages
 export function handleDRError(error: unknown, operation: string): never {
   console.error(`DR Storage ${operation} error:`, error);

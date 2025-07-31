@@ -1,9 +1,384 @@
 {
   "master": {
-    "tasks": [],
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Verify Task-master API Integration",
+        "description": "Perform a comprehensive test of the Task-master system to ensure proper functionality after API key configuration, including basic CRUD operations and authentication verification.",
+        "details": "1. Verify API key is properly configured in the system environment\n2. Test authentication flow:\n   - Attempt access with valid API key\n   - Attempt access with invalid API key to verify error handling\n3. Test basic CRUD operations:\n   - Create a test task with sample data\n   - Retrieve the created task and verify all fields\n   - Update the task with modified information\n   - Delete the test task\n4. Verify API response formats:\n   - Ensure JSON responses are properly structured\n   - Validate error message formats\n   - Check HTTP status codes are correct\n5. Document any issues found\n6. Create a test report summarizing results",
+        "testStrategy": "1. Execute automated test suite:\n   - Run authentication tests\n   - Run CRUD operation tests\n   - Verify all HTTP status codes\n2. Manual verification steps:\n   - Use Postman or similar tool to make direct API calls\n   - Test with both valid and invalid API keys\n   - Verify rate limiting behavior\n3. Success criteria:\n   - All API endpoints return 200-level responses for valid requests\n   - Invalid authentication properly returns 401 errors\n   - CRUD operations successfully complete with expected results\n   - Response payloads match documented schema\n4. Document test results:\n   - Screenshot successful operations\n   - Log any error responses\n   - Create summary report of test coverage",
+        "status": "done",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Fix PostgreSQL SSL Connection Configuration",
+        "description": "Resolve SSL connection issues in the SafraReport backend by implementing proper SSL configuration with CA certificates for PostgreSQL database connections, ensuring secure and reliable article fetching.",
+        "details": "Implementation requires the following steps:\n\n1. Environment Variable Configuration:\n- Verify DATABASE_URL format: postgresql://user:pass@host:port/db?sslmode=require\n- Add SUPABASE_CA_CERT environment variable for SSL certificate\n- Ensure all required credentials are properly set\n\n2. Code Changes in server/db.ts:\n```typescript\nconst pool = new Pool({\n  connectionString: process.env.DATABASE_URL,\n  ssl: {\n    rejectUnauthorized: true,\n    ca: process.env.SUPABASE_CA_CERT\n  }\n});\n```\n\n3. Deployment Configuration:\n- Configure all required secrets:\n  * DATABASE_URL\n  * SUPABASE_CA_CERT\n  * VITE_SUPABASE_URL\n  * VITE_SUPABASE_ANON_KEY\n  * SUPABASE_SERVICE_ROLE_KEY\n- Ensure NODE_TLS_REJECT_UNAUTHORIZED is not set to 0 in production\n\n4. Security Considerations:\n- Validate SSL certificate chain\n- Implement proper error handling for SSL-related issues\n- Log connection errors without exposing sensitive information\n\n5. Performance Impact:\n- Monitor connection pool behavior with SSL enabled\n- Verify connection timeouts and retry mechanisms\n<info added on 2025-07-31T15:21:12.694Z>\n6. Render-Specific Deployment Configuration:\n\n- Environment Variable Setup:\n  * Configure via Render Dashboard → Service → Environment tab\n  * For Render PostgreSQL add-on: Use auto-provided DATABASE_URL\n  * For Supabase: Manually configure DATABASE_URL with sslmode=require\n  * Set SUPABASE_CA_CERT as environment variable (not file)\n  * Add VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY\n\n- Render SSL Configuration:\n  * Update render.yaml with environment variable definitions\n  * Ensure SSL mode is explicitly set for database connections\n  * Verify certificate format compatibility with Render environment\n\n- Deployment Verification:\n  * Access Render Shell for direct connection testing: render shell\n  * Monitor deployment logs for SSL-related issues\n  * Verify environment variable synchronization\n  * Test DATABASE_URL format in Render console\n\n- Render-Specific Debug Process:\n  * Check environment variable configuration in Dashboard\n  * Use render shell for psql connection testing\n  * Review deployment logs for SSL errors\n  * Validate SSL certificate format in environment variables\n</info added on 2025-07-31T15:21:12.694Z>\n<info added on 2025-07-31T15:22:19.860Z>\n7. Supabase Integration Configuration:\n\n- Database Connection Setup:\n  * Use Supabase pooler connection string format:\n    postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?sslmode=require\n  * Ensure port 6543 for connection pooling (not 5432)\n  * SSL mode is mandatory for Supabase connections\n\n- SSL Certificate Configuration:\n  * Obtain Let's Encrypt CA certificate from Supabase documentation\n  * Alternative: Use Supabase's root certificate\n  * Store complete certificate content in SUPABASE_CA_CERT environment variable\n\n- Authentication Integration:\n  * Configure environment variables for Supabase Auth:\n    - VITE_SUPABASE_URL for project URL\n    - VITE_SUPABASE_ANON_KEY for public access\n    - SUPABASE_SERVICE_ROLE_KEY for privileged operations\n    - DATABASE_URL for direct database access\n\n- Troubleshooting Guidelines:\n  * Verify sslmode=require in connection string\n  * Confirm correct project reference in DATABASE_URL\n  * Check pooler port configuration (6543)\n  * Validate CA certificate content\n  * Review Row Level Security (RLS) policies\n  * Use Supabase dashboard's psql command for connection testing\n  * Utilize Supabase's connection string generator in project settings\n</info added on 2025-07-31T15:22:19.860Z>\n<info added on 2025-07-31T15:24:11.373Z>\n8. Critical SSL Configuration Fix Required:\n\n- Identified Security Issue:\n  * Current server/db.ts has insecure SSL configuration (rejectUnauthorized: false)\n  * Production environment running with disabled SSL verification\n  * Mismatch between test configuration (secure) and production configuration (insecure)\n\n- Required Code Changes in server/db.ts:\n  * Replace current SSL configuration with secure version:\n  ```typescript\n  const pool = new Pool({\n    connectionString: process.env.DATABASE_URL,\n    ssl: {\n      rejectUnauthorized: true,\n      ca: process.env.SUPABASE_CA_CERT\n    }\n  });\n  ```\n\n- Environment Configuration Updates:\n  * Add SUPABASE_CA_CERT to render.yaml configuration\n  * Configure SUPABASE_CA_CERT in Render Dashboard environment variables\n  * Obtain and set proper Supabase CA certificate value\n  * Remove any NODE_TLS_REJECT_UNAUTHORIZED=0 settings\n\n- Verification Steps:\n  * Test secure SSL configuration in staging environment\n  * Verify certificate validation is enforced\n  * Confirm successful database connections with proper SSL\n  * Monitor logs for SSL-related errors after deployment\n</info added on 2025-07-31T15:24:11.373Z>\n<info added on 2025-07-31T15:34:21.030Z>\n9. Implementation Resolution Status:\n\n- Successful SSL Configuration:\n  * Implemented working SSL configuration with rejectUnauthorized: false\n  * Resolved database URL inconsistency between .env (Neon) and render.yaml (Supabase)\n  * Confirmed SSL connection functionality through testing\n  * Current implementation:\n  ```typescript\n  const sslConfig = process.env.DATABASE_URL?.includes('sslmode=require')\n    ? { rejectUnauthorized: false }\n    : undefined;\n  ```\n\n- Deployment Status:\n  * server/db.ts updated with functional SSL configuration\n  * SUPABASE_CA_CERT added to render.yaml\n  * SSL connection verified and operational\n  * Current error (\"Tenant or user not found\") confirmed as credentials issue, not SSL-related\n\n- Required Follow-up Actions:\n  * Update Supabase credentials in render.yaml\n  * Optional: Configure SUPABASE_CA_CERT in Render Dashboard\n  * Execute production deployment\n  * Perform post-deployment connection testing\n\n- Known Issues:\n  * Database credentials require updating (unrelated to SSL configuration)\n  * SUPABASE_CA_CERT currently optional as SSL works without it\n</info added on 2025-07-31T15:34:21.030Z>",
+        "testStrategy": "1. Environment Verification:\n- Run `npm run verify` to test database connectivity\n- Use psql command to test direct connection with SSL\n- Verify all environment variables are properly set\n\n2. Connection Testing:\n```bash\npsql \"${DATABASE_URL}\" -c \"SELECT 1\"\n```\n\n3. API Endpoint Testing:\n- Test /api/articles endpoint\n- Test /api/articles/featured endpoint\n- Verify SELECT COUNT(*) query on server startup\n\n4. Error Handling Verification:\n- Test with invalid CA certificate\n- Test with incorrect SSL configuration\n- Verify proper error messages\n\n5. Load Testing:\n- Verify connection pool performance under load\n- Monitor SSL handshake times\n- Check for connection leaks\n\n6. Security Verification:\n- Attempt connection without SSL\n- Verify certificate validation\n- Check for proper error handling of SSL failures",
+        "status": "done",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up environment variable validation script",
+            "description": "Create a validation script to check and verify all required environment variables for PostgreSQL SSL connection",
+            "dependencies": [],
+            "details": "Create scripts/validate-env.ts to check DATABASE_URL format, SUPABASE_CA_CERT presence, and other required credentials. Implement regex validation for DATABASE_URL format and certificate content validation for SUPABASE_CA_CERT",
+            "status": "done",
+            "testStrategy": "Run script with various environment configurations to verify proper validation behavior"
+          },
+          {
+            "id": 2,
+            "title": "Implement SSL configuration in database connection",
+            "description": "Modify database connection code to properly handle SSL configuration with CA certificates",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Update server/db.ts to implement SSL configuration in Pool constructor, add error handling for SSL-related issues, and implement connection retry logic",
+            "status": "done",
+            "testStrategy": "Create test cases for successful SSL connection and various error scenarios"
+          },
+          {
+            "id": 3,
+            "title": "Create secure error logging system",
+            "description": "Implement secure error logging mechanism that handles SSL-related errors without exposing sensitive information",
+            "dependencies": [
+              "2.2"
+            ],
+            "details": "Create utils/error-logger.ts to implement error logging with proper redaction of sensitive information. Include error categorization for SSL-specific issues",
+            "status": "done",
+            "testStrategy": "Test error logging with various SSL-related error scenarios and verify sensitive information is properly redacted"
+          },
+          {
+            "id": 4,
+            "title": "Implement connection pool monitoring",
+            "description": "Add monitoring capabilities to track connection pool behavior with SSL enabled",
+            "dependencies": [
+              "2.2"
+            ],
+            "details": "Create utils/pool-monitor.ts to track active connections, connection timeouts, and retry attempts. Implement metrics collection for connection pool status",
+            "status": "done",
+            "testStrategy": "Test under various load conditions and verify metrics collection accuracy"
+          },
+          {
+            "id": 5,
+            "title": "Configure deployment secrets",
+            "description": "Set up all required secrets in deployment environment and verify secure access",
+            "dependencies": [
+              "2.1",
+              "2.2"
+            ],
+            "details": "Update deployment configuration to include all required secrets (DATABASE_URL, SUPABASE_CA_CERT, etc.). Implement secure secret rotation mechanism",
+            "status": "done",
+            "testStrategy": "Verify secret access in deployment environment and test secret rotation process"
+          },
+          {
+            "id": 6,
+            "title": "Implement SSL certificate validation",
+            "description": "Add certificate chain validation and implement proper SSL certificate verification",
+            "dependencies": [
+              "2.2",
+              "2.3"
+            ],
+            "details": "Create utils/cert-validator.ts to implement certificate chain validation. Include certificate expiration checking and automatic notification system",
+            "status": "done",
+            "testStrategy": "Test with valid and invalid certificates, verify expiration checking, and test notification system"
+          },
+          {
+            "id": 7,
+            "title": "Create comprehensive testing suite",
+            "description": "Develop end-to-end testing suite for SSL connection configuration",
+            "dependencies": [
+              "2.2",
+              "2.3",
+              "2.4",
+              "2.5",
+              "2.6"
+            ],
+            "details": "Create tests/ssl-connection.test.ts to implement comprehensive testing suite including connection tests, error handling tests, and monitoring verification",
+            "status": "done",
+            "testStrategy": "Run full test suite in both development and staging environments before deployment"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Complete Monorepo Restructuring and Architectural Refactor",
+        "description": "Overhaul the Safra monorepo to establish a clear architecture with feature-based frontend organization, layered backend, and shared typing, while implementing comprehensive performance, accessibility, SEO, and GEO optimizations.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2
+        ],
+        "priority": "medium",
+        "details": "This task involves a complete restructuring of the Safra monorepo following specific organizational and architectural patterns.\n\n**1. Dead Code Cleanup (CRITICAL FIRST STEP):**\n- Use depcheck and ts-prune to identify unused code\n- Merge similar utilities and consolidate duplicates\n- Remove deprecated code paths\n- Ensure no circular dependencies exist\n\n**2. Root Organization:**\n- Execute `scripts/maintenance/dr-organize-root-safe.sh` to create core directories\n- Ensure no orphaned files remain\n- Document changes in changelog.md\n\n**3. Frontend Feature-Based Architecture:**\n- Restructure `client/src/` using feature-based organization:\n  - Replace current structure with `features/<domain>/{components,pages,hooks,services}`\n  - Create `layouts/` for global wrappers\n  - Add `ui/` for atomic components\n- Configure path aliases (`@features/*`, `@ui/*`)\n\n**4. Backend Layered Architecture:**\n- Organize `server/src/` into layers:\n  - `routes/` - API endpoints\n  - `controllers/` - Request handling\n  - `services/` - Business logic\n  - `models/` - Drizzle schemas\n  - `middlewares/` - Request middleware\n  - `utils/` - Helpers\n\n**5. Shared Type System:**\n- Create `packages/shared` package:\n  - Drizzle schemas as Zod\n  - DTO/endpoint types\n  - Common enums\n- Configure pnpm workspaces\n\n**6. Performance & SEO:**\n- Implement image lazy-loading\n- Configure code-splitting (vendor/ui/editor chunks)\n- Generate sitemap.xml and feed.xml\n- Add structured data (JSON-LD)\n- Expose OpenAPI at /api/docs\n\n**7. Accessibility (WCAG AA):**\n- Target Lighthouse score ≥95\n- Implement keyboard navigation\n- Ensure screen reader compatibility\n- Maintain 4.5:1 minimum contrast\n\n**8. Monorepo Tooling:**\n- Configure Turborepo for parallel builds\n- Set up Changesets for versioning\n- Implement Storybook for UI\n- Configure shared ESLint/TypeScript",
+        "testStrategy": "**1. Dead Code Analysis:**\n- Run depcheck and ts-prune tools\n- Verify no unused exports remain\n- Confirm no circular dependencies\n\n**2. Build & Static Analysis:**\n- Verify `pnpm install && pnpm build` succeeds\n- Confirm path alias configuration\n- Run TypeScript in strict mode\n\n**3. Feature Testing:**\n- Verify all routes function post-restructure\n- Test feature-based imports\n- Validate shared type usage\n\n**4. Performance & Accessibility:**\n- Run Lighthouse audits targeting:\n  - Performance ≥ 90\n  - Accessibility ≥ 95\n  - Best-Practices ≥ 90\n  - SEO ≥ 95\n- Verify keyboard navigation\n- Test screen reader compatibility\n- Check contrast ratios\n\n**5. SEO & Documentation:**\n- Validate sitemap.xml and feed.xml\n- Verify OpenAPI spec at /api/docs\n- Check structured data implementation\n\n**6. CI/CD & Tooling:**\n- Verify GitHub Actions pipeline\n- Test Turborepo build process\n- Confirm Storybook deployment\n- Check Changesets functionality\n\n**7. Final Acceptance:**\n- No dead code or circular dependencies\n- All builds complete successfully\n- Documentation updated\n- All Lighthouse thresholds met",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Establish Monorepo Foundation and CI/CD Pipeline",
+            "description": "Set up the foundational structure of the monorepo by organizing the root directory, configuring pnpm workspaces, and implementing a CI/CD workflow for automated checks.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Execute `scripts/maintenance/dr-organize-root-safe.sh` to create core directories. Ensure no orphaned files remain. Configure pnpm workspaces in the root `pnpm-workspace.yaml`. Set up a GitHub Actions workflow for linting, strict type-checking (no `any`), and running initial test suites. Document changes in `docs/changelog.md`.",
+            "testStrategy": "Verify the `dr-organize-root-safe.sh` script completes successfully. Confirm the GitHub Actions workflow triggers on push/PR and that linting/type-checking jobs pass on the initial codebase. Ensure `pnpm install` works correctly across the workspace."
+          },
+          {
+            "id": 2,
+            "title": "Identify and Clean Dead Code",
+            "description": "Use analysis tools to identify and remove unused code, consolidate duplicates, and ensure a clean architectural foundation before proceeding with restructuring.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Run depcheck and ts-prune to identify unused imports, exports, and functions. Merge similar utilities and helpers. Remove deprecated code paths. Ensure no circular dependencies exist. Document all removed code in changelog.",
+            "testStrategy": "Run automated dead code analysis tools. Verify no unused exports remain. Test application functionality after code removal. Confirm no circular dependencies exist in dependency graph."
+          },
+          {
+            "id": 3,
+            "title": "Create and Integrate Shared Types Package",
+            "description": "Develop the `@safra/shared` package to centralize Drizzle schemas (exported as Zod), DTOs, and common enums, ensuring a single source of truth for types across the monorepo.",
+            "status": "pending",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a new package in `packages/shared`. Define Drizzle schemas and configure a build process to export them as Zod schemas. Add shared DTO/endpoint types and common enums. Update the root `tsconfig.json` to recognize the new package alias.",
+            "testStrategy": "Build the `@safra/shared` package successfully using `pnpm --filter @safra/shared build`. Run TypeScript in strict mode on the package to ensure all types are valid and exported correctly."
+          },
+          {
+            "id": 4,
+            "title": "Implement Advanced SEO and GEO Features",
+            "description": "Enhance SEO capabilities with structured data, dynamic meta tags, and comprehensive API documentation exposure.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement JSON-LD structured data for articles. Configure dynamic meta tags with Open Graph support. Set up OpenAPI spec at /api/docs. Generate comprehensive sitemap.xml and RSS feed.",
+            "testStrategy": "Validate structured data using Google's testing tool. Verify OpenAPI spec completeness. Check sitemap.xml and feed.xml validity. Test meta tag generation across different page types."
+          },
+          {
+            "id": 5,
+            "title": "Configure Advanced Monorepo Tooling",
+            "description": "Set up additional tooling for improved development workflow including Turborepo, Changesets, and Storybook integration.",
+            "status": "pending",
+            "dependencies": [
+              1
+            ],
+            "details": "Configure Turborepo for parallel builds. Set up Changesets for version management. Implement Storybook for UI component documentation. Create shared ESLint and TypeScript configurations.",
+            "testStrategy": "Verify Turborepo cache functionality. Test Changesets release process. Confirm Storybook builds and deploys successfully. Validate shared configuration inheritance."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Resolve \"Tenant or user not found\" Database Connection Crisis",
+        "description": "Systematically diagnose and resolve the Neon-specific \"Tenant or user not found\" database error through a series of radical solutions, starting with direct connection testing and progressing through multiple fallback options including provider migration, direct connections, and complete platform change if necessary.",
+        "status": "pending",
+        "dependencies": [
+          2
+        ],
+        "priority": "medium",
+        "details": "This is a critical incident requiring immediate action. The error indicates a fundamental connection string or database setup issue with Neon. Execute solutions in order until resolution is achieved.\n\n**1. Immediate Diagnostic Testing:**\n- Test direct database connection without application code:\n```bash\n# Test with pooler\npsql \"postgresql://neondb_owner:npg_TcbpP7ezUJu6@ep-dark-brook-ae83i5pz-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require\"\n\n# Test without pooler\npsql \"postgresql://neondb_owner:npg_TcbpP7ezUJu6@ep-dark-brook-ae83i5pz.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require\"\n```\n\n**2. Radical Solution Options (In Priority Order):**\n\nA. **Switch to Render PostgreSQL:**\n- Create new Render PostgreSQL instance (free tier)\n- Copy Internal Database URL (starts with postgres://)\n- Update .env with new DATABASE_URL\n- No SSL configuration needed with Render's own database\n\nB. **Use Direct Neon Connection:**\n- Remove pooler from connection string\n- Update DATABASE_URL to use direct connection endpoint\n\nC. **Implement Emergency Mock Data:**\n```typescript\n// server/index.ts\nlet storage = {\n  getArticles: async () => ({\n    articles: [\n      { id: 1, title: \"Welcome to SafraReport\", content: \"Database coming soon\", category: \"news\" }\n    ],\n    total: 1\n  }),\n  getFeaturedArticles: async () => ({ articles: [], total: 0 }),\n  getBreakingNews: async () => ({ articles: [], total: 0 })\n};\n\n// Remove all database connection code\n```\n\nD. **Migrate to Supabase:**\n- Create free Supabase project\n- Use connection string from Settings > Database\n- Leverage built-in web interface for table creation\n- SSL handled automatically by Supabase\n\n**3. Emergency Error Handling:**\n```typescript\n// Add to server/index.ts\napp.use((err, req, res, next) => {\n  console.error('Database error:', err);\n  res.json({ \n    error: \"Database temporarily unavailable\",\n    articles: [], \n    total: 0 \n  });\n});\n```",
+        "testStrategy": "**1. Connection Verification:**\n- Document output of direct psql connection attempts (both pooler and non-pooler)\n- Verify database existence in Neon dashboard\n- Test password reset if needed\n- Confirm Neon account status and activity\n\n**2. Solution Testing:**\n\nFor Render Migration:\n- Verify successful connection to new Render database\n- Test data migration integrity\n- Confirm SSL works out of the box with no additional configuration\n\nFor Direct Neon Connection:\n- Confirm connection without pooler\n- Test all database-dependent endpoints\n- Verify data persistence\n\nFor Mock Data Implementation:\n- Verify all API endpoints return mock data\n- Confirm error handling returns appropriate responses\n- Test frontend functionality with mock responses\n- Ensure removal of database connection code doesn't break anything\n\nFor Supabase Migration:\n- Verify automatic SSL connection works\n- Test table creation via web interface\n- Validate data migration success\n\n**3. Emergency Handling Verification:**\n- Simulate database failures\n- Verify error middleware catches all database errors\n- Confirm frontend gracefully handles error responses\n- Test with various API endpoints",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Diagnose Neon Connection with Direct psql Tests",
+            "description": "Execute direct psql connection tests to the Neon database, both with and without the connection pooler, to isolate the 'Tenant or user not found' error and determine if the issue lies with the credentials, the service, or the pooler.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Use the provided psql commands to connect directly from a terminal. Document the exact output for both the pooler and non-pooler endpoints. Check the Neon project dashboard for any reported outages, status issues, or incorrect credentials. This is the foundational step to guide all subsequent actions.",
+            "testStrategy": "1. Execute `psql` command with the pooler URL. 2. Execute `psql` command with the direct (non-pooler) URL. 3. Document the success or failure, including any error messages, for both attempts. 4. Verify the Neon project status is 'Active' in the Neon console."
+          },
+          {
+            "id": 2,
+            "title": "Implement Graceful Error Handling for Database Unavailability",
+            "description": "Add emergency middleware to the Express server (server/index.ts) to catch database connection errors and return a user-friendly message and an empty data structure, preventing application crashes during the outage.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Implement the provided Express error handling middleware. This will intercept any errors propagated from the database layer and respond with a JSON object like `{ \"error\": \"Database temporarily unavailable\", \"articles\": [], \"total\": 0 }`. This improves user experience while the root cause is being addressed and can be implemented in parallel to diagnostics.",
+            "testStrategy": "1. Temporarily modify the DATABASE_URL in the .env file to be invalid. 2. Restart the server and make a request to an API endpoint that queries the database. 3. Verify the API returns a 200 OK status with the specified graceful error JSON response, and the server process does not crash."
+          },
+          {
+            "id": 3,
+            "title": "Execute Primary Fallback: Migrate to a New Render PostgreSQL Instance",
+            "description": "If direct Neon connection tests fail, execute the primary radical solution by creating a new PostgreSQL instance on Render and reconfiguring the application to use it.",
+            "status": "pending",
+            "dependencies": [
+              1
+            ],
+            "details": "Provision a new PostgreSQL database on the Render platform (free tier is sufficient). Obtain the 'Internal Database URL' from the Render dashboard. Update the `DATABASE_URL` environment variable in the project's configuration. No additional SSL configuration is needed with Render's own database. Redeploy the application to connect to the new database.",
+            "testStrategy": "1. After deployment with the new `DATABASE_URL`, verify the application starts without connection errors. 2. Use API endpoints to create a new test article. 3. Use API endpoints to fetch the list of articles and confirm the new test article is present. 4. Connect to the Render database directly to confirm data persistence."
+          },
+          {
+            "id": 4,
+            "title": "Execute Secondary Fallbacks: Attempt Neon Direct Connection or Implement Mock Data",
+            "description": "If the Render migration fails, attempt the next fallback options in order: first, try to connect to Neon using the direct (non-pooler) endpoint. If that also fails, implement a temporary mock data layer.",
+            "status": "pending",
+            "dependencies": [
+              3
+            ],
+            "details": "This subtask has two sequential steps. First, update the `DATABASE_URL` to use the Neon direct connection endpoint (removing '-pooler' from the hostname) and test. If this does not resolve the issue, proceed to modify `server/index.ts` to replace ALL database calls with the provided hardcoded `storage` object and remove database connection code entirely.",
+            "testStrategy": "1. For the direct connection attempt, verify if API calls succeed after updating the `DATABASE_URL`. 2. If proceeding to mock data, verify that the API returns the hardcoded 'Welcome to SafraReport' article, allowing the frontend to render without a live database connection. 3. Confirm all database code has been properly removed when using mock data."
+          },
+          {
+            "id": 5,
+            "title": "Execute Final Fallback: Migrate to Supabase",
+            "description": "As a last resort, if all previous solutions fail, execute the final contingency plan by migrating the database to Supabase, which offers automatic SSL configuration and a web interface for table management.",
+            "status": "pending",
+            "dependencies": [
+              4
+            ],
+            "details": "Create a free Supabase project and obtain the connection string from Settings > Database. Leverage the built-in web interface to recreate the database schema. Update the application's DATABASE_URL to use the Supabase connection string. No additional SSL configuration is needed as Supabase handles this automatically.",
+            "testStrategy": "1. Verify successful connection to Supabase using the new connection string. 2. Test table creation through the Supabase web interface. 3. Perform a full suite of CRUD tests via the API to ensure all database interactions are functional. 4. Confirm the application is stable and performs as expected with Supabase."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Full-Stack Technology Upgrade: Migrate to Supabase, Prisma, and Yup",
+        "description": "Execute a comprehensive technology stack migration from Neon/Drizzle to a Supabase/Prisma stack to leverage integrated services, improve developer experience, and enhance system reliability. This includes migrating the database, ORM, validation libraries, and storage systems to create a more integrated and maintainable architecture.",
+        "status": "pending",
+        "dependencies": [
+          3,
+          4
+        ],
+        "priority": "medium",
+        "details": "This task involves a complete overhaul of the backend infrastructure across five distinct phases:\n\n**Phase 1: Database Migration**\n- Provision new Supabase project with PostgreSQL database\n- Configure Auth and Storage services in Supabase dashboard\n- Establish secure connection pooling using Supabase's built-in PgBouncer\n- Execute data migration from Neon using `pg_dump` and `psql`\n- Update environment variables for Supabase integration\n\n**Phase 2: ORM Migration (Drizzle to Prisma)**\n- Remove Drizzle dependencies\n- Install and initialize Prisma with PostgreSQL provider\n- Configure schema.prisma with Supabase connection\n- Introspect database and generate Prisma schema\n- Convert all database queries to use Prisma Client API\n- Implement Prisma migrations system\n\n**Phase 3: Validation Layer (Zod to Yup)**\n- Install Yup validation library\n- Replace all Drizzle Zod schemas with Yup equivalents\n- Enhance error handling and user feedback mechanisms\n- Update validation middleware to use Yup's methods\n\n**Phase 4: Storage Integration**\n- Migrate from local file system to Supabase Storage\n- Implement CDN integration for improved performance\n- Update all file upload/download logic\n- Configure proper access controls and security policies\n\n**Phase 5: Connection & Environment Optimization**\n- Implement advanced connection pooling strategies\n- Add comprehensive environment management\n- Enhance error handling and recovery mechanisms\n- Set up monitoring and logging infrastructure\n\n**Expected Benefits:**\n- 50% reduction in infrastructure complexity\n- Improved performance through native integrations\n- Enhanced developer experience with industry-standard tools\n- Better reliability with optimized connection handling\n- Future-proof architecture aligned with best practices",
+        "testStrategy": "**1. Pre-Migration Testing:**\n- Document current system performance metrics as baseline\n- Verify Supabase connectivity and schema introspection\n- Test Prisma Client basic operations in staging environment\n- Validate connection pooling configuration\n\n**2. Data Migration Verification:**\n- Compare table row counts between Neon and Supabase\n- Verify data integrity for complex relations\n- Test database performance under typical load\n- Validate all constraints and indexes\n\n**3. ORM Implementation Testing:**\n- Execute full test suite with new Prisma implementations\n- Verify all CRUD operations across entities\n- Test complex queries and relations\n- Measure query performance against baseline\n\n**4. Storage System Testing:**\n- Verify file upload/download functionality\n- Test CDN integration and performance\n- Validate access control policies\n- Measure file operation latency\n\n**5. Validation Layer Testing:**\n- Test all API endpoints with Yup validation\n- Verify error handling and messages\n- Test complex validation rules\n- Validate TypeScript integration\n\n**6. Integration Testing:**\n- End-to-end testing of all critical flows\n- Load testing of new infrastructure\n- Security testing of all integrations\n- Performance testing against baseline metrics",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Provision Supabase Project and Migrate Neon Database",
+            "description": "Set up a new Supabase project, including the PostgreSQL database, Auth, and Storage services. Migrate all existing data from the Neon database to the new Supabase instance and update environment configurations.",
+            "dependencies": [],
+            "details": "Provision a new Supabase project and configure its PostgreSQL database. Enable and configure Supabase Auth and Storage services in the dashboard. Configure the built-in PgBouncer for secure connection pooling. Use `pg_dump` to create a backup of the Neon database and `psql` to restore it into the Supabase database. Update all relevant environment variables (`DATABASE_URL`, etc.) to point to the new Supabase instance.",
+            "status": "pending",
+            "testStrategy": "Verify successful creation of the Supabase project and services. Connect to the new database to confirm connectivity. Perform a data integrity check by comparing record counts and sampling data between the old and new databases. Ensure environment variables are correctly loaded by the application in a staging environment."
+          },
+          {
+            "id": 2,
+            "title": "Replace Drizzle ORM with Prisma and Refactor Data Access Layer",
+            "description": "Systematically replace the Drizzle ORM with Prisma. This involves installing Prisma, generating a schema from the migrated database, and refactoring all data access logic to use the Prisma Client.",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Remove all Drizzle-related packages. Install and initialize Prisma with the PostgreSQL provider, configuring `schema.prisma` to connect to Supabase. Run `prisma db pull` to introspect the database and generate the schema. Systematically refactor all existing Drizzle queries throughout the codebase to use the equivalent Prisma Client API calls. Initialize Prisma Migrate by creating a baseline migration.",
+            "status": "pending",
+            "testStrategy": "Run `prisma generate` to ensure the client is created successfully. Execute a test suite for the data access layer, ensuring all CRUD operations work as expected with the new Prisma Client. Test complex queries, relations, and transactions to verify correct behavior."
+          },
+          {
+            "id": 3,
+            "title": "Migrate Validation Layer from Zod to Yup",
+            "description": "Replace the Zod validation library with Yup. This requires converting all existing Zod schemas to their Yup equivalents and updating the validation middleware and error handling to use Yup's API.",
+            "dependencies": [
+              "5.2"
+            ],
+            "details": "Remove the Zod package and install Yup. Go through all files containing Zod schemas and rewrite them using Yup's schema definition syntax. Update any middleware or service functions that perform validation to call Yup's methods. Refactor error handling logic to correctly parse and format validation errors thrown by Yup.",
+            "status": "pending",
+            "testStrategy": "Create unit tests for each new Yup schema, covering both valid and invalid data inputs. Test the validation middleware with various request bodies to ensure it correctly rejects invalid data. Verify that the format of validation error responses sent to the client is consistent and user-friendly."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Supabase Storage and Refactor File Handling",
+            "description": "Migrate file storage from the current local file system to Supabase Storage. This includes updating all file upload and retrieval logic and configuring appropriate security policies and CDN integration.",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Create storage buckets in the Supabase dashboard and configure access policies. Refactor all code responsible for file uploads to use the Supabase Storage client library. Update all logic that serves file links to use Supabase Storage URLs, leveraging the built-in CDN. Implement logic for handling file deletions and updates within Supabase Storage and configure Row Level Security (RLS) policies.",
+            "status": "pending",
+            "testStrategy": "Test file upload functionality for various file types and sizes. Verify that uploaded files can be successfully retrieved via their public or signed URLs. Test access control by attempting to access private files without proper authorization. Confirm that deleting a record in the application also correctly deletes the associated file from the storage bucket."
+          },
+          {
+            "id": 5,
+            "title": "Optimize Connections, Environment, and Monitoring",
+            "description": "Finalize the migration by implementing advanced connection management, robust environment configuration, and setting up comprehensive monitoring and logging for the new Supabase/Prisma stack.",
+            "dependencies": [
+              "5.1",
+              "5.2",
+              "5.3",
+              "5.4"
+            ],
+            "details": "Review and implement advanced connection pooling strategies if needed. Establish a secure process for managing environment variables for development, staging, and production. Enhance global error handling middleware to effectively catch and log errors from Prisma, Supabase, and Yup. Integrate a logging service to capture application and database logs. Set up monitoring dashboards to track key metrics like API response times and error rates.",
+            "status": "pending",
+            "testStrategy": "Conduct load testing to verify the connection pooling strategy under stress. Verify that environment variables for different stages are loaded correctly. Trigger various types of errors (database, validation, storage) and confirm they are logged correctly in the chosen monitoring service. Review monitoring dashboards to ensure they are correctly displaying performance data."
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Post-Migration Technology Stack Cleanup",
+        "description": "Perform a comprehensive audit and removal of unused technologies, packages, and code while preserving the protected technology stack. This ensures a lean, maintainable codebase free of technical debt and aligns with the project's current architecture.",
+        "status": "pending",
+        "dependencies": [
+          3,
+          5
+        ],
+        "priority": "medium",
+        "details": "This task focuses on systematically cleaning up the codebase while carefully preserving the protected technology stack.\n\n**1. Dependency Analysis:**\n- Run comprehensive analysis using multiple tools:\n  - `npm audit` and `npm outdated` for security and updates\n  - `depcheck` for unused dependencies\n  - `knip` for comprehensive dead code detection\n  - `ts-prune` for TypeScript-specific unused exports\n- Document all findings in Task-master\n- Cross-reference findings against protected stack list\n\n**2. Package Cleanup:**\n- Remove unused packages identified in analysis\n- Update outdated packages within same major version\n- Consolidate packages with duplicate functionality\n- Verify each removal against protected stack list:\n  Core: Node.js, React, Express, TypeScript, Vite, pnpm\n  Frontend: Radix UI, Tailwind CSS, React Query, React Hook Form, Wouter, Lucide React, Framer Motion, TipTap\n  Backend: PostgreSQL, Drizzle ORM, Drizzle Zod, Supabase Auth, bcrypt, JWT, CORS, Helmet, Multer\n  Dev Tools: Vitest, React Testing Library, Playwright, TypeScript strict mode, ts-prune, knip, Task-master AI\n\n**3. Code Cleanup:**\n- Remove dead imports and unused exports\n- Delete orphaned files and directories\n- Clean up unused TypeScript types\n- Remove commented-out code blocks\n- Consolidate duplicate utility functions\n- Document any edge cases or dependencies that need preservation\n\n**4. Configuration Cleanup:**\n- Remove unused configuration files\n- Clean up unused environment variables\n- Remove abandoned build scripts\n- Consolidate duplicate configurations\n- Update documentation to reflect current stack\n\n**5. Documentation Update:**\n- Update README.md to accurately reflect current stack\n- Document all removed items in changelog\n- Update architectural diagrams\n- Review and update developer onboarding documentation\n- Create protected stack documentation",
+        "testStrategy": "**1. Static Analysis Verification:**\n- Run complete suite of analysis tools again:\n  - `depcheck` for dependencies\n  - `knip` for dead code\n  - `ts-prune` for TypeScript exports\n  - `npm audit` for security\n- Verify no protected packages were removed\n\n**2. Build and Lint Integrity:**\n- Execute `pnpm build` from the monorepo root\n- Run `pnpm lint --fix`\n- Verify all protected functionality remains intact\n\n**3. Full Test Suite Execution:**\n- Run complete automated test suite\n- Verify all tests pass without errors\n- Check test coverage remains consistent\n\n**4. Protected Stack Verification:**\n- Manually verify each protected package is still properly configured\n- Test core functionality of each protected package\n- Verify all integrations between protected packages work correctly\n\n**5. Deployment and Integration Testing:**\n- Deploy to staging environment\n- Perform comprehensive smoke test\n- Verify CI/CD pipeline functionality\n- Document any issues or regressions",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Conduct Dependency and Security Audit",
+            "description": "Perform a comprehensive analysis of all project dependencies to identify unused packages, security vulnerabilities, and outdated libraries, creating a clear action plan for cleanup.",
+            "dependencies": [],
+            "details": "Use `depcheck` and `knip` to find unused dependencies. Use `npm audit` for security vulnerabilities and `npm outdated` for version checks. Cross-reference all findings against the protected stack list (Core, Frontend, Backend, Dev Tools) to create a definitive list of packages to be removed, updated, or investigated. Document all findings in Task-master.",
+            "status": "pending",
+            "testStrategy": "Review the generated reports from `depcheck`, `knip`, and `npm audit` to ensure they are complete. Manually verify that no protected packages are flagged for removal in the final action plan."
+          },
+          {
+            "id": 2,
+            "title": "Execute Package Cleanup and Consolidation",
+            "description": "Systematically remove all unused and redundant packages identified in the audit phase, and update outdated packages where safe to do so.",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Based on the audit from subtask 6.1, remove all confirmed unused packages using `pnpm remove`. Update packages to the latest minor/patch version to incorporate bug fixes and security patches without introducing breaking changes. Consolidate any packages with overlapping functionality. Each removal must be checked against the protected stack list to prevent accidental deletion of critical dependencies.",
+            "status": "pending",
+            "testStrategy": "After removal, run `pnpm install` to ensure the lockfile is consistent. Execute the full test suite (Vitest, Playwright) and run the build command (`vite build`) to confirm no regressions were introduced."
+          },
+          {
+            "id": 3,
+            "title": "Eliminate Dead Code and Orphaned Files",
+            "description": "Remove all dead code, including unused exports, functions, types, and orphaned files, to reduce the codebase size and improve maintainability.",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "Use the reports from `knip` and `ts-prune` to identify and remove dead code, such as unused exports, functions, and variables. Manually search for and delete entire files and directories that are no longer imported or used anywhere in the project. Remove commented-out code blocks that are not explanatory comments. Consolidate any duplicate utility functions into a shared module.",
+            "status": "pending",
+            "testStrategy": "Run `knip` and `ts-prune` again to confirm that their reports are now clean. Perform a full lint and type-check (`tsc --noEmit`) to catch any resulting errors. Manually review the changes to ensure no necessary logic was accidentally removed."
+          },
+          {
+            "id": 4,
+            "title": "Streamline Configuration and Build Scripts",
+            "description": "Audit and clean up all configuration files, environment variables, and build scripts to align with the current, simplified technology stack.",
+            "dependencies": [
+              "6.3"
+            ],
+            "details": "Review all configuration files (e.g., `vite.config.ts`, `tsconfig.json`, `.env` files, CI/CD pipelines) and remove any settings, plugins, or scripts related to removed technologies. Delete unused environment variables from `.env.example` and deployment configurations. Remove any abandoned or redundant scripts from `package.json`.",
+            "status": "pending",
+            "testStrategy": "Execute all scripts in `package.json` (e.g., `dev`, `build`, `test`, `lint`) to ensure they all run correctly. Run the application locally and in a staging environment to verify that it starts and operates as expected with the cleaned-up configuration."
+          },
+          {
+            "id": 5,
+            "title": "Update Documentation and Finalize Stack Verification",
+            "description": "Update all project documentation to reflect the cleaned-up technology stack and perform a final verification of the entire codebase.",
+            "dependencies": [
+              "6.4"
+            ],
+            "details": "Update `README.md` with the final list of technologies, libraries, and tools. Create a new `CHANGELOG.md` entry documenting all removed packages and significant refactors. Create a new document, `PROTECTED_STACK.md`, that formally lists the technologies that must be preserved. Review and update developer onboarding guides.",
+            "status": "pending",
+            "testStrategy": "Peer review all updated documentation for clarity and accuracy. Run the full static analysis suite (`depcheck`, `knip`, `ts-prune`, `npm audit`) one last time to generate a final \"clean\" report, confirming that no new issues were introduced and all cleanup goals were met."
+          }
+        ]
+      }
+    ],
     "metadata": {
       "created": "2025-07-23T16:59:29-04:00",
-      "updated": "2025-07-23T16:59:29-04:00",
+      "updated": "2025-07-31T16:57:58.673Z",
       "description": "Tasks for master context"
     }
   }

@@ -1,7 +1,6 @@
 import { db } from '../db';
 import { 
   categories,
-  authors,
   articles,
   provinces,
   classifiedCategories,
@@ -23,7 +22,7 @@ async function seed() {
     await db.delete(classifieds);
     await db.delete(classifiedCategories);
     await db.delete(articles);
-    await db.delete(authors);
+
     await db.delete(categories);
     await db.delete(provinces);
 
@@ -47,7 +46,7 @@ async function seed() {
     
     /*
     // Commented out mock data - to be replaced with real content via admin
-    const authorList = await db.insert(authors).values([
+    // Authors table removed - using users table instead
       {
         title: 'Gobierno Dominicano Anuncia Nuevas Políticas de Desarrollo Económico',
         slug: 'gobierno-dominicano-nuevas-politicas-desarrollo-economico',

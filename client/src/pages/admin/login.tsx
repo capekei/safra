@@ -1,18 +1,17 @@
 import { useState } from "react";
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
-import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SEO } from "@/components/seo";
-import { Shield, Loader2, Lock, User } from "lucide-react";
+import { Shield, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
-export default function SafraAdmin() {
+export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [credentials, setCredentials] = useState({
     username: '',
@@ -24,52 +23,33 @@ export default function SafraAdmin() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/admin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials)
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Store admin authentication
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminUser', JSON.stringify(data.user));
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Also set mockAuth for compatibility
-        localStorage.setItem('mockAuth', JSON.stringify({ user: data.user }));
-
+      const result = await login(credentials.username, credentials.password);
+      
+      if (result.success) {
         toast({
           title: "Acceso concedido",
           description: "Bienvenido al panel de administración",
         });
-
-        // Redirect to admin dashboard
+        
         setTimeout(() => {
-          setLocation(data.redirectUrl || '/admin/dashboard');
+          setLocation('/admin/dashboard');
         }, 500);
       } else {
         toast({
           title: "Error de autenticación",
-          description: data.message || "Credenciales inválidas",
+          description: result.error || "Credenciales inválidas",
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('Admin login error:', error);
       toast({
-        title: "Error",
-        description: "Error al conectar con el servidor",
+        title: "Error de conexión",
+        description: "No se pudo conectar al servidor",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
@@ -154,12 +134,7 @@ export default function SafraAdmin() {
               Acceso exclusivo para administradores autorizados
             </p>
             
-            {/* Dev hint */}
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 text-center">
-                <span className="font-medium">Dev:</span> admin / admin123
-              </p>
-            </div>
+            
             
             <div className="text-center">
               <a 

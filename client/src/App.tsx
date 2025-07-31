@@ -8,7 +8,7 @@ import { Suspense, Component, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-import TestSimple from "@/pages/test-simple";
+// import TestSimple from "@/pages/test-simple"; // Another likely cause of crash
 import Article from "@/pages/article";
 import ArticlePreview from "@/pages/article-preview";
 import Category from "@/pages/category";
@@ -18,14 +18,13 @@ import UIShowcase from "@/pages/ui-showcase";
 import Cuenta from "@/pages/cuenta";
 import Login from "@/pages/login";
 
-import SafraAdmin from "@/pages/safra-admin";
+// import SafraAdmin from "@/pages/safra-admin"; // File doesn't exist - using AdminDashboard instead
 import UserDashboard from "@/pages/user/dashboard";
 import PostClassified from "@/pages/user/post-classified";
 import PostReview from "@/pages/user/post-review";
 import NewsPreferences from "@/pages/user/news-preferences";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminArticles from "@/pages/admin/articles";
-import AdminAuthors from "@/pages/admin/authors";
 import AdminClassifieds from "@/pages/admin/classifieds";
 import AdminModeration from "@/pages/admin/moderation";
 import AdminDatabase from "@/pages/admin/database";
@@ -33,7 +32,7 @@ import AdminReviews from "@/pages/admin/reviews";
 import AdminUsers from "@/pages/admin/users";
 import AdminAudit from "@/pages/admin/audit";
 import AdminAds from "@/pages/admin/ads";
-import AdminArticlesTest from "@/pages/admin-articles-test";
+// import AdminArticlesTest from "@/pages/admin-articles-test"; // Likely cause of crash
 
 // Error Fallback Component
 function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
@@ -98,10 +97,10 @@ function Router() {
   
   return (
     <Switch>
-      {/* Test page */}
-      <Route path="/test">
+      {/* Test page - Disabled */}
+      {/* <Route path="/test">
         <RouteWithErrorBoundary component={TestSimple} />
-      </Route>
+      </Route> */}
       
       {/* Home page */}
       <Route path="/">
@@ -167,7 +166,7 @@ function Router() {
       {/* Test routes (development) */}
 
       <Route path="/safra-admin">
-        <RouteWithErrorBoundary component={SafraAdmin} />
+        <RouteWithErrorBoundary component={AdminDashboard} />
       </Route>
 
       {/* Development Admin Access (bypasses Auth0) */}
@@ -212,9 +211,6 @@ function ProtectedAdminRoutes() {
       <Route path="/admin/articles">
         <RouteWithErrorBoundary component={AdminArticles} />
       </Route>
-      <Route path="/admin/authors">
-        <RouteWithErrorBoundary component={AdminAuthors} />
-      </Route>
       <Route path="/admin/classifieds">
         <RouteWithErrorBoundary component={AdminClassifieds} />
       </Route>
@@ -236,9 +232,9 @@ function ProtectedAdminRoutes() {
       <Route path="/admin/ads">
         <RouteWithErrorBoundary component={AdminAds} />
       </Route>
-      <Route path="/admin/articles-test">
+      {/* <Route path="/admin/articles-test">
         <RouteWithErrorBoundary component={AdminArticlesTest} />
-      </Route>
+      </Route> */}
       <Route>
         <Redirect to="/admin/dashboard" />
       </Route>
@@ -255,9 +251,6 @@ function DevAdminRoutes() {
       </Route>
       <Route path="/dev-admin/articles">
         <RouteWithErrorBoundary component={AdminArticles} />
-      </Route>
-      <Route path="/dev-admin/authors">
-        <RouteWithErrorBoundary component={AdminAuthors} />
       </Route>
       <Route path="/dev-admin/classifieds">
         <RouteWithErrorBoundary component={AdminClassifieds} />

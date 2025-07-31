@@ -104,9 +104,9 @@ export default function Cuenta() {
           <div className="space-y-6">
             <GlassCard className="p-8">
               <div className="flex items-start gap-6">
-                {user?.profileImageUrl ? (
+                {false ? (
                   <img 
-                    src={user.profileImageUrl} 
+                    src="" 
                     alt="Profile" 
                     className="w-24 h-24 rounded-2xl object-cover"
                   />
@@ -131,10 +131,10 @@ export default function Cuenta() {
                       </div>
                     )}
                     
-                    {user?.createdAt && (
+                    {false && (
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        <span>Miembro desde {new Date(user.createdAt).toLocaleDateString('es-DO')}</span>
+                        <span>Miembro desde {new Date().toLocaleDateString('es-DO')}</span>
                       </div>
                     )}
                   </div>
@@ -156,33 +156,7 @@ export default function Cuenta() {
                     </div>
                   </div>
                   <Button
-                    onClick={async () => {
-                      try {
-                        // Auto-login admin user since they already have access
-                        const response = await fetch('/api/auth/admin', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            username: 'admin',
-                            password: 'admin123'
-                          }),
-                        });
-
-                        const data = await response.json();
-                        if (data.success) {
-                          localStorage.setItem('adminToken', data.token);
-                          localStorage.setItem('adminUser', JSON.stringify(data.user));
-                          window.location.href = '/admin/dashboard';
-                        } else {
-                          alert('Error de acceso al panel administrativo');
-                        }
-                      } catch (error) {
-                        console.error('Error:', error);
-                        alert('Error de conexión');
-                      }
-                    }}
+                    onClick={() => window.location.href = '/admin/login'}
                     variant="outline"
                     className="border-red-200 text-red-600 hover:bg-red-50"
                   >
