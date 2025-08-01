@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { articles, categories, authors } from "@shared/schema";
-import { eq, desc, and, or, sql } from "drizzle-orm";
+import { eq, desc, and, or, sql, like } from "drizzle-orm";
 import { logAdminAction } from "../middleware/admin";
 import { authenticateSupabase, requireAdmin, type AuthRequest } from "../middleware/auth";
 import { DatabaseUser } from "../supabase";
@@ -54,11 +54,13 @@ router.get("/articles", (async (req: any, res: Response) => {
     const conditions: any[] = [];
     
     if (search) {
+      // Sanitize search input to prevent SQL injection
+      const sanitizedSearch = search.replace(/[%_]/g, '\\$&'); // Escape SQL wildcards
       conditions.push(
         or(
-          sql`${articles.title} ILIKE ${`%${search}%`}`,
-          sql`${articles.excerpt} ILIKE ${`%${search}%`}`,
-          sql`${articles.content} ILIKE ${`%${search}%`}`
+          like(articles.title, `%${sanitizedSearch}%`),
+          like(articles.excerpt, `%${sanitizedSearch}%`),
+          like(articles.content, `%${sanitizedSearch}%`)
         )
       );
     }
