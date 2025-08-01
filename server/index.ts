@@ -1,7 +1,6 @@
-// CRITICAL: Must be FIRST line - before all imports
-if (process.env.NODE_ENV === 'production') {
-  process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
-}
+// Security: TLS certificate validation should NEVER be disabled in production
+// This was a critical security vulnerability that could allow man-in-the-middle attacks
+// If SSL issues occur, they should be resolved properly rather than disabling validation
 
 import * as dotenv from 'dotenv';
 dotenv.config();
@@ -21,10 +20,26 @@ const app = express();
 app.use(morgan('combined'));
 
 // Add CORS support for deployment
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [
+      process.env.FRONTEND_URL || 'https://yourdomain.com',
+      process.env.REPLIT_URL || '',
+      // Add other trusted domains here
+    ].filter(Boolean) // Remove empty strings
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4000'];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? '*'  // Allow all origins for Replit deployment
-    : '*',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked request from unauthorized origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
