@@ -7,7 +7,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { Suspense, Component, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
-import Home from "@/pages/home";
+import SimpleTest from "@/pages/simple-test";
 // import TestSimple from "@/pages/test-simple"; // Another likely cause of crash
 import Article from "@/pages/article";
 import ArticlePreview from "@/pages/article-preview";
@@ -104,7 +104,7 @@ function Router() {
       
       {/* Home page */}
       <Route path="/">
-        <RouteWithErrorBoundary component={Home} />
+        <RouteWithErrorBoundary component={SimpleTest} />
       </Route>
       
       {/* Article pages - Handle special chars in slugs */}

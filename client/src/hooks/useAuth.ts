@@ -1,142 +1,178 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 
-interface AdminUser {
-  id: number;
+interface User {
+  id: string;
   email: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  role: 'super_admin' | 'admin' | 'editor' | 'moderator';
-  avatar?: string;
-  isActive: boolean;
-  lastLoginAt?: string;
+  firstName?: string;
+  lastName?: string;
+  role: string;
+  profileImageUrl?: string;
 }
 
 interface AuthState {
-  user: AdminUser | null;
-  isLoading: boolean;
+  user: User | null;
   isAuthenticated: boolean;
-  error: string | null;
+  isLoading: boolean;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+interface AuthContextType extends AuthState {
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+}
 
-export function useAuth() {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    isLoading: true,
-    isAuthenticated: false,
-    error: null
-  });
+// Simple in-memory auth state for now
+let authState: AuthState = {
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+};
 
-  const checkAuth = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/admin/verify`, {
-        method: 'GET',
-        credentials: 'include', // Include cookies for session
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+// For development, we can simulate a logged-in user
+const DEV_USER: User = {
+  id: 'dev-user-1',
+  email: 'dev@safrareport.com',
+  firstName: 'Desarrollo',
+  lastName: 'Usuario',
+  role: 'user', // or 'admin' for testing admin features
+};
 
-      if (response.ok) {
-        const userData = await response.json();
-        setAuthState({
-          user: userData.user,
-          isLoading: false,
-          isAuthenticated: true,
-          error: null
-        });
-      } else {
-        setAuthState({
-          user: null,
-          isLoading: false,
-          isAuthenticated: false,
-          error: null
-        });
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setAuthState({
-        user: null,
-        isLoading: false,
-        isAuthenticated: false,
-        error: 'Failed to verify authentication'
-      });
-    }
-  };
-
-  const login = async (email: string, password: string) => {
-    try {
-      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-      
-      const response = await fetch(`${API_BASE_URL}/api/auth/admin/login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setAuthState({
-          user: data.user,
-          isLoading: false,
-          isAuthenticated: true,
-          error: null
-        });
-        return { success: true };
-      } else {
-        setAuthState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: data.message || 'Login failed'
-        }));
-        return { success: false, error: data.message };
-      }
-    } catch (error) {
-      const errorMessage = 'Network error during login';
-      setAuthState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: errorMessage
-      }));
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await fetch(`${API_BASE_URL}/api/auth/admin/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-    } catch (error) {
-      console.error('Logout request failed:', error);
-    } finally {
-      setAuthState({
-        user: null,
-        isLoading: false,
-        isAuthenticated: false,
-        error: null
-      });
-    }
-  };
+export function useAuth(): AuthContextType {
+  const [state, setState] = useState<AuthState>(authState);
 
   useEffect(() => {
-    checkAuth();
+    // Simulate checking for existing auth on mount
+    setState(prev => ({ ...prev, isLoading: true }));
+    
+    // Check localStorage for auth token (simple implementation)
+    const token = localStorage.getItem('auth_token');
+    const storedUser = localStorage.getItem('auth_user');
+    
+    setTimeout(() => {
+      if (token && storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          authState = {
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          };
+          setState(authState);
+        } catch (error) {
+          // Invalid stored data, clear it
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
+          authState = {
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          };
+          setState(authState);
+        }
+      } else {
+        authState = {
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        };
+        setState(authState);
+      }
+    }, 100); // Simulate network delay
   }, []);
 
+  const login = async (email: string, password: string): Promise<void> => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    
+    // Simulate API call
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (email === 'dev@safrareport.com' && password === 'dev123') {
+          // Successful login
+          const user = { ...DEV_USER, email };
+          authState = {
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          };
+          
+          // Store in localStorage
+          localStorage.setItem('auth_token', 'dev-token-123');
+          localStorage.setItem('auth_user', JSON.stringify(user));
+          
+          setState(authState);
+          resolve();
+        } else {
+          // Failed login
+          authState = {
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          };
+          setState(authState);
+          reject(new Error('Credenciales inválidas'));
+        }
+      }, 1000);
+    });
+  };
+
+  const register = async (email: string, password: string, firstName: string, lastName: string): Promise<void> => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    
+    // Simulate API call
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (email && password && firstName && lastName) {
+          // Successful registration
+          const user: User = {
+            id: `user-${Date.now()}`,
+            email,
+            firstName,
+            lastName,
+            role: 'user',
+          };
+          
+          authState = {
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          };
+          
+          // Store in localStorage
+          localStorage.setItem('auth_token', `token-${Date.now()}`);
+          localStorage.setItem('auth_user', JSON.stringify(user));
+          
+          setState(authState);
+          resolve();
+        } else {
+          authState = {
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          };
+          setState(authState);
+          reject(new Error('Todos los campos son requeridos'));
+        }
+      }, 1000);
+    });
+  };
+
+  const logout = (): void => {
+    // Clear localStorage
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    
+    authState = {
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+    };
+    setState(authState);
+  };
+
   return {
-    user: authState.user,
-    isLoading: authState.isLoading,
-    isAuthenticated: authState.isAuthenticated,
-    error: authState.error,
+    ...state,
     login,
     logout,
-    checkAuth
+    register,
   };
 }

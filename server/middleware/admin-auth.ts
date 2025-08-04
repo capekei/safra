@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { db } from '../db';
-import { adminUsers, adminSessions } from '@shared/schema';
+import { adminUsers, adminSessions } from '@safra/shared';
 import { eq, and } from 'drizzle-orm';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
@@ -13,7 +13,7 @@ export interface AdminAuthRequest extends Request {
     firstName: string;
     lastName: string;
     role: string;
-    isActive: boolean;
+    active: boolean;
   };
 }
 
@@ -69,7 +69,7 @@ export const authenticateAdmin = async (req: AdminAuthRequest, res: Response, ne
       }
     }
 
-    if (!adminUser || !adminUser.isActive) {
+    if (!adminUser || !adminUser.active) {
       return res.status(403).json({ 
         message: 'Acceso denegado',
         code: 'ACCESS_DENIED'
@@ -82,7 +82,7 @@ export const authenticateAdmin = async (req: AdminAuthRequest, res: Response, ne
       firstName: adminUser.firstName,
       lastName: adminUser.lastName,
       role: adminUser.role,
-      isActive: adminUser.isActive
+      active: adminUser.active
     };
     
     next();
@@ -241,7 +241,6 @@ export const cleanupExpiredSessions = async () => {
         eq(adminSessions.expiresAt, now)
       ));
     
-    console.log(`Cleaned up expired admin sessions`);
     
     // Clean up in-memory rate limiting data (older than 1 hour)
     const oneHourAgo = Date.now() - (60 * 60 * 1000);

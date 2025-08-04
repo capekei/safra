@@ -1,34 +1,38 @@
-import { cn } from "@/lib/utils";
-import { forwardRef } from "react";
+import * as React from "react"
+import { cn } from "@/lib/utils"
 
-interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "hover" | "button" | "pill";
-  active?: boolean;
+export interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
+  blur?: 'sm' | 'md' | 'lg';
+  opacity?: number;
 }
 
-const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
-  ({ className, variant = "default", active, children, ...props }, ref) => {
+const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
+  ({ className, children, blur = 'md', opacity = 0.1, ...props }, ref) => {
+    const blurClasses = {
+      sm: 'backdrop-blur-sm',
+      md: 'backdrop-blur',
+      lg: 'backdrop-blur-lg'
+    };
+
     return (
       <div
         ref={ref}
         className={cn(
-          "glass-card",
-          {
-            "glass-button": variant === "button",
-            "glass-pill": variant === "pill",
-            "active": active && variant === "pill",
-            "hover:transform hover:-translate-y-1": variant === "hover",
-          },
+          "bg-white/90 border border-white/20 rounded-lg shadow-lg",
+          blurClasses[blur],
           className
         )}
+        style={{
+          backgroundColor: `rgba(255, 255, 255, ${opacity})`,
+        }}
         {...props}
       >
         {children}
       </div>
-    );
+    )
   }
-);
+)
+GlassCard.displayName = "GlassCard"
 
-GlassCard.displayName = "GlassCard";
-
-export { GlassCard };
+export { GlassCard }

@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import 'dotenv/config';
+// dotenv configured in main index.ts entry point
 
 // Supabase configuration - support both client and server env var names
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;

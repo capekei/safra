@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "../db";
-import { adminUsers, adminSessions } from "@shared/schema";
+import { adminUsers, adminSessions } from "@safra/shared";
 import { eq, and } from "drizzle-orm";
 import { DR_ERRORS } from "../lib/helpers/dominican";
 
@@ -36,7 +36,7 @@ router.post("/api/auth/admin/login", async (req: Request, res: Response) => {
     }
 
     // Check if account is active
-    if (!adminUser.isActive) {
+    if (!adminUser.active) {
       return res.status(403).json({ 
         message: "Cuenta desactivada. Contacte al administrador",
         code: "ACCOUNT_DISABLED"
@@ -44,7 +44,7 @@ router.post("/api/auth/admin/login", async (req: Request, res: Response) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, adminUser.passwordHash);
+    const isValidPassword = await bcrypt.compare(password, adminUser.password);
     if (!isValidPassword) {
       return res.status(401).json({ 
         message: "Credenciales inválidas",
@@ -69,18 +69,18 @@ router.post("/api/auth/admin/login", async (req: Request, res: Response) => {
 
     await db.insert(adminSessions).values({
       id: sessionId,
-      adminUserId: adminUser.id,
+      admin_user_id: adminUser.id,
       token: token,
-      expiresAt: expiresAt,
-      ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
-      userAgent: req.headers['user-agent'] || 'unknown'
+      expires_at: expiresAt,
+      ip_address: req.ip || req.connection.remoteAddress || 'unknown',
+      user_agent: req.headers['user-agent'] || 'unknown'
     });
 
     // Update last login
     await db.update(adminUsers)
       .set({ 
-        lastLoginAt: new Date(),
-        updatedAt: new Date()
+        last_login: new Date(),
+        updated_at: new Date()
       })
       .where(eq(adminUsers.id, adminUser.id));
 
@@ -99,8 +99,8 @@ router.post("/api/auth/admin/login", async (req: Request, res: Response) => {
       user: {
         id: adminUser.id,
         email: adminUser.email,
-        firstName: adminUser.firstName,
-        lastName: adminUser.lastName,
+        firstName: adminUser.first_name,
+        lastName: adminUser.last_name,
         role: adminUser.role
       },
       token: token
@@ -124,8 +124,8 @@ router.post("/api/auth/admin/logout", async (req: Request, res: Response) => {
       // Invalidate session in database
       await db.update(adminSessions)
         .set({ 
-          isActive: false,
-          updatedAt: new Date()
+          is_active: false,
+          updated_at: new Date()
         })
         .where(eq(adminSessions.id, sessionId));
     }
@@ -167,14 +167,14 @@ router.get("/api/auth/admin/verify", async (req: Request, res: Response) => {
       const session = await db.query.adminSessions.findFirst({
         where: and(
           eq(adminSessions.id, sessionId),
-          eq(adminSessions.isActive, true)
+          eq(adminSessions.is_active, true)
         ),
         with: {
           adminUser: true
         }
       });
 
-      if (!session || session.expiresAt < new Date()) {
+      if (!session || session.expires_at < new Date()) {
         return res.status(401).json({ 
           message: "Sesión expirada",
           code: "SESSION_EXPIRED"
@@ -199,7 +199,7 @@ router.get("/api/auth/admin/verify", async (req: Request, res: Response) => {
       }
     }
 
-    if (!adminUser || !adminUser.isActive) {
+    if (!adminUser || !adminUser.active) {
       return res.status(403).json({ 
         message: "Acceso denegado",
         code: "ACCESS_DENIED"
@@ -212,8 +212,8 @@ router.get("/api/auth/admin/verify", async (req: Request, res: Response) => {
       user: {
         id: adminUser.id,
         email: adminUser.email,
-        firstName: adminUser.firstName,
-        lastName: adminUser.lastName,
+        firstName: adminUser.first_name,
+        lastName: adminUser.last_name,
         role: adminUser.role
       }
     });
@@ -276,11 +276,11 @@ router.post("/api/auth/admin/create", async (req: Request, res: Response) => {
     const [newAdmin] = await db.insert(adminUsers).values({
       email: email.toLowerCase().trim(),
       username: username.toLowerCase().trim(),
-      passwordHash: passwordHash,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
+      password: passwordHash,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
       role: 'super_admin',
-      isActive: true
+      active: true
     }).returning();
 
     res.status(201).json({
@@ -289,8 +289,8 @@ router.post("/api/auth/admin/create", async (req: Request, res: Response) => {
       user: {
         id: newAdmin.id,
         email: newAdmin.email,
-        firstName: newAdmin.firstName,
-        lastName: newAdmin.lastName,
+        firstName: newAdmin.first_name,
+        lastName: newAdmin.last_name,
         role: newAdmin.role
       }
     });

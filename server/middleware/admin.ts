@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { db } from '../db';
-import { auditLogs } from '@shared/schema';
+import { auditLogs } from '@safra/shared';
 import type { AuthRequest } from './auth';
 
 /**
@@ -36,7 +36,8 @@ export async function logAdminAction(
     // This should be fixed by either:
     // 1. Updating schema to use varchar for adminUserId
     // 2. Creating a mapping table between Supabase user IDs and admin user integers
-    console.log('Admin action logged:', {
+    /*
+    await db.insert(auditLogs).values({
       adminUserId: req.adminUser.id,
       action: options.action,
       entityType: options.entityType,
@@ -44,6 +45,7 @@ export async function logAdminAction(
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
+    */
   } catch (error) {
     console.error('Failed to log admin action:', error);
     // Logging failure should not disrupt the primary user-facing operation.

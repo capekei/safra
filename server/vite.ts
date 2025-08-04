@@ -12,16 +12,13 @@ export function log(message: string, source = "express") {
     hour12: true,
   });
 
-  console.log(`${formattedTime} [${source}] ${message}`);
 }
 
 export async function setupVite(app: Express, server: Server) {
   try {
-    console.log('🔄 Setting up Vite middleware...');
     
     // Skip Vite setup in production - should use serveStatic instead
     if (process.env.NODE_ENV === 'production') {
-      console.log('⚠️  Production mode detected - skipping Vite middleware');
       return;
     }
     
@@ -64,10 +61,8 @@ export async function setupVite(app: Express, server: Server) {
       },
     });
 
-    console.log('✅ Vite server created successfully');
     
     app.use(vite.middlewares);
-    console.log('✅ Vite middlewares registered');
     
     app.use("*", async (req, res, next) => {
       const url = req.originalUrl;
@@ -100,7 +95,6 @@ export async function setupVite(app: Express, server: Server) {
       }
     });
     
-    console.log('✅ Vite catch-all handler registered');
   } catch (error) {
     console.error('❌ FATAL: Failed to setup Vite middleware:', error);
     console.error('🔧 Server will continue without Vite middleware');

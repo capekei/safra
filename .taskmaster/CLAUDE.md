@@ -415,3 +415,289 @@ These commands make AI calls and may take up to a minute:
 ---
 
 _This guide ensures Claude Code has immediate access to Task Master's essential functionality for agentic development workflows._
+
+# SafraReport - AI Assistant Context
+
+## 🚀 Project Overview
+**Name**: SafraReport  
+**Type**: Dominican Republic News and Marketplace Platform  
+**Stage**: Production-Ready (100% backend tasks complete)  
+**Repository**: /Users/josealvarez/Desktop/SafraReport  
+**Architecture**: Monorepo with TypeScript
+
+## 🏗️ Architecture
+
+### Frontend
+- **Framework**: React 18.3.1 with TypeScript
+- **Build Tool**: Vite 6.0.0
+- **Styling**: Tailwind CSS 3.4.17
+- **State Management**: @tanstack/react-query 5.60.5
+- **Routing**: Wouter 3.3.5
+- **Validation**: Zod 3.24.2
+- **Port**: 3000
+
+### Backend
+- **Runtime**: Node.js v23.11.0
+- **Framework**: Express.js 4.21.2 with TypeScript
+- **ORM**: Drizzle ORM 0.39.3
+- **Authentication**: Supabase Auth + Custom Admin Auth (bcrypt + JWT)
+- **Logging**: Pino 9.7.0
+- **Security**: Helmet 8.1.0
+- **Port**: 4000
+- **API Style**: REST with OpenAPI documentation
+
+### Database
+- **Type**: PostgreSQL (Neon/Supabase)
+- **ORM**: Drizzle ORM 0.39.3
+- **Security**: Row Level Security (RLS) policies
+- **Migration Tool**: Drizzle migrations
+- **Tables**: 12 primary entities
+
+### Development Tools
+- **Monorepo**: Turborepo 2.0.0
+- **Package Manager**: pnpm 10.11.0
+- **Testing**: Vitest 3.2.4 + Playwright 1.54.1
+- **Documentation**: Storybook 8.0.0
+- **Version Management**: Changesets 2.28.0
+
+## 📁 Project Structure
+```
+SafraReport/
+├── client/                 # React + Vite frontend
+│   ├── src/
+│   │   ├── components/    # 49 reusable UI components
+│   │   ├── pages/        # 28 page components
+│   │   ├── hooks/        # 4 custom React hooks
+│   │   ├── lib/          # 11 utility libraries
+│   │   └── App.tsx       # Main app entry
+├── server/                # Express.js backend
+│   ├── routes/           # API routes (admin, user, docs, seo)
+│   ├── middleware/       # Auth, logging, error handling
+│   ├── database/         # Storage layer (36KB)
+│   └── index.ts         # Server entry point
+├── shared/               # Common types, schemas, DTOs
+├── packages/             # Additional workspace packages
+├── migrations/           # Database migrations
+├── scripts/              # Build and deployment scripts
+├── tests/                # Integration and unit tests
+└── docs/                 # Documentation
+```
+
+## 🔑 Key Features
+
+### Currently Working ✅
+- ✅ User Registration/Login (Supabase Auth)
+- ✅ Admin Authentication (bcrypt + JWT)
+- ✅ Create/Read/Update/Delete Classifieds
+- ✅ News Articles Management
+- ✅ Business Directory
+- ✅ Business Reviews System
+- ✅ Image Upload for Listings
+- ✅ Search Functionality
+- ✅ Categories Filter
+- ✅ Admin Panel with Audit Logging
+- ✅ Text-to-Speech Accessibility
+- ✅ Floating Audio Player
+- ✅ Social Media Integration
+
+### Need to Implement 📋
+- [ ] Payment Processing
+- [ ] Email Notifications
+- [ ] Advanced Search Filters
+- [ ] User Messaging System
+- [ ] Real-time Updates (WebSocket)
+- [ ] Mobile App (React Native)
+- [ ] Redis Caching Layer
+- [ ] Full-text Search
+- [ ] International Expansion (Multi-language)
+
+## 🗄️ Database Schema
+
+### Core Tables (12 Primary Entities)
+
+**User Management**
+- `users` - Supabase user profiles
+- `admin_users` - Admin authentication with bcrypt
+- `admin_sessions` - Secure session management
+- `user_preferences` - User customization settings
+
+**Content Management**
+- `articles` - News articles with rich metadata
+- `categories` - Content categorization
+- `classifieds` - Marketplace listings
+- `businesses` - Business directory
+- `reviews` - Business reviews and ratings
+
+**Geographic & Audit**
+- `provinces` - Dominican Republic provinces
+- `audit_logs` - Admin action tracking
+- `classified_categories` & `business_categories` - Taxonomy
+
+### Key Relationships
+- `articles.author_id → admin_users.id`
+- `articles.category_id → categories.id`
+- `classifieds.user_id → users.id`
+- `reviews.business_id → businesses.id`
+- `admin_sessions.admin_user_id → admin_users.id`
+
+## 🔧 Environment Variables
+```bash
+# Server
+NODE_ENV=development
+PORT=4000
+DATABASE_URL=postgresql://[connection]
+JWT_SECRET=[secure-secret]
+SESSION_SECRET=[secure-secret]
+
+# Supabase
+SUPABASE_URL=[your-project-url]
+SUPABASE_ANON_KEY=[your-anon-key]
+SUPABASE_SERVICE_KEY=[your-service-key]
+
+# Client
+VITE_API_URL=http://localhost:4000
+VITE_APP_NAME=SafraReport
+VITE_SUPABASE_URL=[your-project-url]
+VITE_SUPABASE_ANON_KEY=[your-anon-key]
+```
+
+## 🔐 Security Implementation
+
+### Authentication Systems
+- **Primary Users**: Supabase Auth
+- **Admin Users**: Custom bcrypt + JWT
+- **Sessions**: Secure HTTP-only cookies
+- **Database**: Row Level Security (RLS)
+
+### Security Features
+- ✅ **Password Hashing**: bcrypt with 12 salt rounds
+- ✅ **Rate Limiting**: Express rate limiter on auth endpoints
+- ✅ **CSRF Protection**: CSRF tokens for state-changing operations
+- ✅ **Security Headers**: Helmet.js implementation
+- ✅ **Input Validation**: Zod schemas for all inputs
+- ✅ **Audit Logging**: Comprehensive admin action tracking
+
+## 🐛 Current Issues
+
+### Critical 🔴
+- Vite/pnpm chunk resolution error (ERR_MODULE_NOT_FOUND)
+- NODE_TLS_REJECT_UNAUTHORIZED security warning
+- Port 4000 sometimes stays occupied after crash
+
+### To Fix 🟡
+- Dev script shows "Next.js" instead of "Vite"
+- Multiple dotenv injections in logs
+- Missing shadcn/ui component imports (@/components/ui/toaster)
+- Authentication consolidation needed (multiple auth systems)
+- Some test coverage gaps in frontend components
+
+## 🚦 Commands
+
+### Development
+```bash
+pnpm dev:all          # Start all services in parallel
+pnpm build:all        # Build all packages
+pnpm test:all         # Run all tests
+
+# Individual packages
+pnpm --filter @safra/client dev
+pnpm --filter @safra/server test
+
+# Fix common issues
+lsof -ti :4000 | xargs kill -9  # Kill port 4000
+rm -rf node_modules pnpm-lock.yaml && npm install  # Fix pnpm issues
+```
+
+## 📊 Performance & Scalability
+
+### Frontend Optimizations
+- Vite build system for fast development
+- Code splitting with dynamic imports
+- React Query for server state caching
+- LazyImage component for image optimization
+- Tailwind CSS with purging
+
+### Backend Optimizations
+- Drizzle ORM for type-safe queries
+- PostgreSQL connection pooling
+- Pino structured logging
+- Efficient middleware pipeline
+
+### Database Performance
+- Proper indexing on frequently queried columns
+- RLS policies for security without performance impact
+- JSON fields for efficient complex data storage
+
+## 🌐 Deployment & Infrastructure
+
+### Production Environment
+- **Database**: Neon PostgreSQL
+- **Hosting**: Railway/Render ready
+- **SSL/TLS**: Certificate management configured
+- **Monitoring**: Health checks at /health endpoint
+
+### Observability
+- Structured JSON logging with Pino
+- Comprehensive error boundaries
+- Request correlation IDs
+- Complete admin audit trail
+
+## 🎯 Business Context
+
+### Target Market
+- **Location**: Dominican Republic
+- **Main Categories**: Vehicles, Electronics, Real Estate, Jobs, Services
+- **Features**: News, Classifieds, Business Reviews
+- **Competitors**: Corotos, Mercado Libre
+
+### Monetization Plan
+- 💰 Featured Listings
+- 📢 Banner Ads
+- 🏢 Premium Business Accounts
+- 💳 Transaction Fees
+
+## 💻 Team & Development
+- **Team Size**: Solo/Small team
+- **Architecture**: Domain-Driven Design with Repository Pattern
+- **Testing**: Unit tests (Vitest) + E2E tests (Playwright)
+- **Documentation**: Storybook for component documentation
+
+## 🆘 Current Priorities
+
+### Immediate (Next 30 Days)
+- Fix Vite/pnpm chunk resolution issues
+- Consolidate authentication systems
+- Complete frontend component test coverage
+- Implement performance monitoring
+
+### Medium-term (Next 90 Days)
+- Add Redis caching layer
+- Implement full-text search
+- Add real-time features with WebSocket
+- Mobile app planning
+
+### Long-term (Next 6 Months)
+- Microservices migration for scale
+- International expansion support
+- Advanced analytics dashboard
+- Business intelligence features
+
+## 📝 Technical Achievements
+
+### Recent Security Overhaul (100% Complete)
+- Removed all hardcoded credentials
+- Implemented secure session management
+- Added comprehensive RLS policies
+- Eliminated legacy authentication bypasses
+
+### Architecture Excellence
+- Modern monorepo with clear boundaries
+- Type-safe end-to-end development
+- Comprehensive testing infrastructure
+- Production-ready security implementation
+
+### Developer Experience
+- Fast development workflow with Turborepo
+- Excellent tooling (Storybook, TypeScript, testing)
+- Clear documentation and project structure
+- Automated quality assurance

@@ -13,7 +13,7 @@ import {
   ads,
   adPlacements,
   adAnalytics
-} from "@shared/schema";
+} from "@safra/shared";
 import { and, eq, or, desc, ilike, SQL, sql, gte, lte, count } from "drizzle-orm";
 // import { authenticateSupabase, requireAdmin, AuthRequest } from "../../middleware/auth"; // Temporarily disabled - using Neon/Drizzle stack
 import { safeParseInt } from "./utils";

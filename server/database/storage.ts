@@ -1,5 +1,6 @@
 import {
   articles,
+  adminUsers,
   categories,
   classifieds,
   classifiedCategories,
@@ -10,6 +11,7 @@ import {
   users,
   userPreferences,
   type Article,
+  type AdminUser,
   type Category,
   type Classified,
   type ClassifiedCategory,
@@ -27,8 +29,29 @@ import {
   type ClassifiedWithRelations,
   type BusinessWithRelations,
   type ReviewWithRelations
-} from "@shared/schema";
-import { db } from "../db";
+} from "../../shared/src/index.js";
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+// dotenv configured in main index.ts entry point
+
+// Create database connection directly in storage
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+const db = drizzle(pool, { schema: {
+  articles,
+  adminUsers,
+  categories,
+  classifieds,
+  classifiedCategories,
+  businesses,
+  businessCategories,
+  reviews,
+  provinces,
+  users,
+  userPreferences
+} });
 import { eq, desc, and, sql, ilike, gte, or } from 'drizzle-orm';
 import { handleStorageError, convertToStringArray, slugify } from '../lib/helpers/dominican';
 
@@ -139,10 +162,43 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  private db;
+  private db: any = null;
+  private pool: any = null;
 
   constructor() {
-    this.db = db;
+    // Lazy initialization - don't create connection until needed
+  }
+
+  private getDb() {
+    if (!this.db) {
+      const { drizzle } = require('drizzle-orm/node-postgres');
+      const { Pool } = require('pg');
+      this.pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+      });
+      this.db = drizzle(this.pool, { schema: {
+        articles,
+        adminUsers,
+        categories,
+        classifieds,
+        classifiedCategories,
+        businesses,
+        businessCategories,
+        reviews,
+        provinces,
+        users,
+        userPreferences
+      } });
+    }
+    return this.db;
+  }
+
+  private getPool() {
+    if (!this.pool) {
+      this.getDb(); // Initialize both db and pool
+    }
+    return this.pool;
   }
 
   // =================================================================================
@@ -151,7 +207,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUser(id: string): Promise<User | undefined> {
     try {
-      return await this.db.query.users.findFirst({ where: eq(users.id, id) });
+      return await this.getDb().query.users.findFirst({ where: eq(users.id, id) });
     } catch (error) {
       return handleStorageError('NOT_FOUND', `User with id ${id} not found`, error);
     }
@@ -159,7 +215,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
-      return await this.db.query.users.findFirst({ where: eq(users.email, email) });
+      return await this.getDb().query.users.findFirst({ where: eq(users.email, email) });
     } catch (error) {
       return handleStorageError('NOT_FOUND', `User with email ${email} not found`, error);
     }
@@ -167,7 +223,7 @@ export class DatabaseStorage implements IStorage {
 
   async upsertUser(user: UpsertUser): Promise<User> {
     try {
-      const [result] = await this.db.insert(users).values(user).onConflictDoUpdate({ target: users.id, set: user }).returning();
+      const [result] = await this.getDb().insert(users).values(user).onConflictDoUpdate({ target: users.id, set: user }).returning();
       if (!result) {
         throw new Error('Upsert operation failed to return user.');
       }
@@ -183,117 +239,68 @@ export class DatabaseStorage implements IStorage {
 
   async getArticles(limit = 10, offset = 0, categorySlug?: string): Promise<ArticleWithRelations[]> {
     try {
-      if (categorySlug) {
-        const category = await this.getCategoryBySlug(categorySlug);
-        if (!category) return [];
+      // Simplified query for now - get basic article data
+      let query = `
+        SELECT 
+          a.id, a.title, a.slug, a.excerpt, a.content, 
+          a.featured_image, a.video_url, a.is_breaking, a.is_featured,
+          a.published, a.published_at, a.author_id, a.category_id, 
+          a.views, a.likes, a.created_at, a.updated_at,
+          c.name as category_name, c.slug as category_slug,
+          au.name as author_name
+        FROM articles a
+        LEFT JOIN categories c ON a.category_id = c.id
+        LEFT JOIN admin_users au ON a.author_id = au.id
+        WHERE a.published = true
+      `;
 
-        return await this.db
-          .select({
-            id: articles.id,
-            title: articles.title,
-            slug: articles.slug,
-            excerpt: articles.excerpt,
-            content: articles.content,
-            featuredImage: articles.featuredImage,
-            videoUrl: articles.videoUrl,
-            isBreaking: articles.isBreaking,
-            isFeatured: articles.isFeatured,
-            published: articles.published,
-            publishedAt: articles.publishedAt,
-            authorId: articles.authorId,
-            categoryId: articles.categoryId,
-            categoryIds: articles.categoryIds,
-            provinceId: articles.provinceId,
-            status: articles.status,
-            scheduledFor: articles.scheduledFor,
-            images: articles.images,
-            videos: articles.videos,
-            likes: articles.likes,
-            comments: articles.comments,
-            views: articles.views,
-            createdAt: articles.createdAt,
-            updatedAt: articles.updatedAt,
-            category: {
-              id: categories.id,
-              name: categories.name,
-              slug: categories.slug,
-              icon: categories.icon,
-              description: categories.description,
-              createdAt: categories.createdAt,
-            },
-            province: {
-              id: provinces.id,
-              name: provinces.name,
-              code: provinces.code,
-            },
-            authorUsername: users.firstName,
-          })
-          .from(articles)
-          .leftJoin(categories, eq(articles.categoryId, categories.id))
-          .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-          .leftJoin(users, eq(articles.authorId, users.id))
-          .where(and(eq(articles.categoryId, category.id), eq(articles.published, true)))
-          .orderBy(desc(articles.publishedAt))
-          .offset(offset)
-          .limit(limit);
+      const params = [];
+      
+      if (categorySlug) {
+        query += ` AND c.slug = $${params.length + 1}`;
+        params.push(categorySlug);
       }
-      return await this.db
-        .select({
-          id: articles.id,
-          title: articles.title,
-          slug: articles.slug,
-          excerpt: articles.excerpt,
-          content: articles.content,
-          featuredImage: articles.featuredImage,
-          videoUrl: articles.videoUrl,
-          isBreaking: articles.isBreaking,
-          isFeatured: articles.isFeatured,
-          published: articles.published,
-          publishedAt: articles.publishedAt,
-          authorId: articles.authorId,
-          categoryId: articles.categoryId,
-          categoryIds: articles.categoryIds,
-          provinceId: articles.provinceId,
-          status: articles.status,
-          scheduledFor: articles.scheduledFor,
-          images: articles.images,
-          videos: articles.videos,
-          likes: articles.likes,
-          comments: articles.comments,
-          views: articles.views,
-          createdAt: articles.createdAt,
-          updatedAt: articles.updatedAt,
-          category: {
-            id: categories.id,
-            name: categories.name,
-            slug: categories.slug,
-            icon: categories.icon,
-            description: categories.description,
-            createdAt: categories.createdAt,
-          },
-          province: {
-            id: provinces.id,
-            name: provinces.name,
-            code: provinces.code,
-          },
-          authorUsername: users.firstName,
-        })
-        .from(articles)
-        .leftJoin(categories, eq(articles.categoryId, categories.id))
-        .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-        .leftJoin(users, eq(articles.authorId, users.id))
-        .where(eq(articles.published, true))
-        .orderBy(desc(articles.publishedAt))
-        .offset(offset)
-        .limit(limit);
+      
+      query += ` ORDER BY a.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      params.push(limit, offset);
+
+      // Use raw SQL with pg pool
+      const result = await this.getPool().query(query, params);
+      
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        excerpt: row.excerpt,
+        content: row.content,
+        featuredImage: row.featured_image,
+        videoUrl: row.video_url,
+        isBreaking: row.is_breaking,
+        isFeatured: row.is_featured,
+        published: row.published,
+        publishedAt: row.published_at,
+        authorId: row.author_id,
+        categoryId: row.category_id,
+        views: row.views,
+        likes: row.likes,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        category: row.category_name ? {
+          name: row.category_name,
+          slug: row.category_slug,
+        } : undefined,
+        authorName: row.author_name,
+      }));
+      
     } catch (error) {
+      console.error('Storage error in getArticles:', error);
       return handleStorageError('DATABASE_ERROR', 'Failed to fetch articles', error);
     }
   }
 
   async getFeaturedArticles(limit = 5): Promise<ArticleWithRelations[]> {
     try {
-      return await this.db
+      return await this.getDb()
         .select({
           id: articles.id,
           title: articles.title,
@@ -332,12 +339,12 @@ export class DatabaseStorage implements IStorage {
             name: provinces.name,
             code: provinces.code,
           },
-          authorUsername: users.firstName,
+          authorName: adminUsers.first_name,
         })
         .from(articles)
         .leftJoin(categories, eq(articles.categoryId, categories.id))
         .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-        .leftJoin(users, eq(articles.authorId, users.id))
+        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
         .where(and(eq(articles.isFeatured, true), eq(articles.published, true)))
         .orderBy(desc(articles.publishedAt))
         .limit(limit);
@@ -348,7 +355,7 @@ export class DatabaseStorage implements IStorage {
 
   async getBreakingNews(limit = 5): Promise<ArticleWithRelations[]> {
     try {
-      return await this.db
+      return await this.getDb()
         .select({
           id: articles.id,
           title: articles.title,
@@ -387,12 +394,12 @@ export class DatabaseStorage implements IStorage {
             name: provinces.name,
             code: provinces.code,
           },
-          authorUsername: users.firstName,
+          authorName: adminUsers.first_name,
         })
         .from(articles)
         .leftJoin(categories, eq(articles.categoryId, categories.id))
         .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-        .leftJoin(users, eq(articles.authorId, users.id))
+        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
         .where(and(eq(articles.isBreaking, true), eq(articles.published, true)))
         .orderBy(desc(articles.publishedAt))
         .limit(limit);
@@ -403,62 +410,59 @@ export class DatabaseStorage implements IStorage {
 
   async getArticleBySlug(slug: string): Promise<ArticleWithRelations | undefined> {
     try {
-      const result = await this.db
-        .select({
-          id: articles.id,
-          title: articles.title,
-          slug: articles.slug,
-          excerpt: articles.excerpt,
-          content: articles.content,
-          featuredImage: articles.featuredImage,
-          videoUrl: articles.videoUrl,
-          isBreaking: articles.isBreaking,
-          isFeatured: articles.isFeatured,
-          published: articles.published,
-          publishedAt: articles.publishedAt,
-          authorId: articles.authorId,
-          categoryId: articles.categoryId,
-          categoryIds: articles.categoryIds,
-          provinceId: articles.provinceId,
-          status: articles.status,
-          scheduledFor: articles.scheduledFor,
-          images: articles.images,
-          videos: articles.videos,
-          likes: articles.likes,
-          comments: articles.comments,
-          views: articles.views,
-          createdAt: articles.createdAt,
-          updatedAt: articles.updatedAt,
-          category: {
-            id: categories.id,
-            name: categories.name,
-            slug: categories.slug,
-            icon: categories.icon,
-            description: categories.description,
-            createdAt: categories.createdAt,
-          },
-          province: {
-            id: provinces.id,
-            name: provinces.name,
-            code: provinces.code,
-          },
-          authorUsername: users.firstName,
-        })
-        .from(articles)
-        .leftJoin(categories, eq(articles.categoryId, categories.id))
-        .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-        .leftJoin(users, eq(articles.authorId, users.id))
-        .where(eq(articles.slug, slug))
-        .limit(1);
-      return result[0] || undefined;
+      const result = await this.getPool().query(`
+        SELECT 
+          a.id, a.title, a.slug, a.excerpt, a.content, 
+          a.featured_image, a.video_url, a.is_breaking, a.is_featured,
+          a.published, a.published_at, a.author_id, a.category_id, 
+          a.views, a.likes, a.created_at, a.updated_at,
+          c.name as category_name, c.slug as category_slug,
+          au.name as author_name
+        FROM articles a
+        LEFT JOIN categories c ON a.category_id = c.id
+        LEFT JOIN admin_users au ON a.author_id = au.id
+        WHERE a.slug = $1 AND a.published = true
+        LIMIT 1
+      `, [slug]);
+      
+      if (result.rows.length === 0) {
+        return undefined;
+      }
+      
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        excerpt: row.excerpt,
+        content: row.content,
+        featuredImage: row.featured_image,
+        videoUrl: row.video_url,
+        isBreaking: row.is_breaking,
+        isFeatured: row.is_featured,
+        published: row.published,
+        publishedAt: row.published_at,
+        authorId: row.author_id,
+        categoryId: row.category_id,
+        views: row.views,
+        likes: row.likes,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        category: row.category_name ? {
+          name: row.category_name,
+          slug: row.category_slug,
+        } : undefined,
+        authorName: row.author_name,
+      };
     } catch (error) {
+      console.error('Storage error in getArticleBySlug:', error);
       return handleStorageError('NOT_FOUND', `Article with slug ${slug} not found`, error);
     }
   }
 
   async getArticleById(id: number): Promise<ArticleWithRelations | undefined> {
     try {
-      const result = await this.db
+      const result = await this.getDb()
         .select({
           id: articles.id,
           title: articles.title,
@@ -497,12 +501,12 @@ export class DatabaseStorage implements IStorage {
             name: provinces.name,
             code: provinces.code,
           },
-          authorUsername: users.firstName,
+          authorName: adminUsers.first_name,
         })
         .from(articles)
         .leftJoin(categories, eq(articles.categoryId, categories.id))
         .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-        .leftJoin(users, eq(articles.authorId, users.id))
+        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
         .where(eq(articles.id, id))
         .limit(1);
       return result[0] || undefined;
@@ -513,7 +517,7 @@ export class DatabaseStorage implements IStorage {
 
   async getRelatedArticles(articleId: number, categoryId: number, limit = 5): Promise<ArticleWithRelations[]> {
     try {
-      const result = await this.db
+      const result = await this.getDb()
         .select({
           id: articles.id,
           title: articles.title,
@@ -553,12 +557,12 @@ export class DatabaseStorage implements IStorage {
             name: provinces.name,
             code: provinces.code,
           },
-          authorUsername: users.firstName,
+          authorName: adminUsers.first_name,
         })
         .from(articles)
         .leftJoin(categories, eq(articles.categoryId, categories.id))
         .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-        .leftJoin(users, eq(articles.authorId, users.id))
+        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
         .where(and(eq(articles.categoryId, categoryId), sql`${articles.id} != ${articleId}`))
         .orderBy(desc(articles.publishedAt))
         .limit(limit);
@@ -571,15 +575,16 @@ export class DatabaseStorage implements IStorage {
 
   async incrementArticleViews(id: number): Promise<void> {
     try {
-      await this.db.update(articles).set({ views: sql`${articles.views} + 1` }).where(eq(articles.id, id));
+      await this.getPool().query('UPDATE articles SET views = COALESCE(views, 0) + 1 WHERE id = $1', [id]);
     } catch (error) {
+      console.error('Storage error in incrementArticleViews:', error);
       handleStorageError('DATABASE_ERROR', `Failed to increment views for article ${id}`, error);
     }
   }
 
   async incrementArticleLikes(id: number): Promise<void> {
     try {
-      await this.db.update(articles).set({ likes: sql`${articles.likes} + 1` }).where(eq(articles.id, id));
+      await this.getDb().update(articles).set({ likes: sql`${articles.likes} + 1` }).where(eq(articles.id, id));
     } catch (error) {
       handleStorageError('DATABASE_ERROR', `Failed to increment likes for article ${id}`, error);
     }
@@ -594,7 +599,7 @@ export class DatabaseStorage implements IStorage {
         videos: convertToStringArray(article.videos),
       };
 
-      const [result] = await this.db.insert(articles).values(articleToInsert).returning();
+      const [result] = await this.getDb().insert(articles).values(articleToInsert).returning();
       if (!result) {
         throw new Error('Article creation failed.');
       }
@@ -610,8 +615,23 @@ export class DatabaseStorage implements IStorage {
 
   async getCategories(): Promise<Category[]> {
     try {
-      return await this.db.query.categories.findMany({ orderBy: [desc(categories.name)] });
+      const result = await this.getPool().query(`
+        SELECT id, name, slug, description, icon, color, created_at
+        FROM categories 
+        ORDER BY name ASC
+      `);
+      
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description,
+        icon: row.icon,
+        color: row.color,
+        created_at: row.created_at,
+      }));
     } catch (error) {
+      console.error('Storage error in getCategories:', error);
       return handleStorageError('DATABASE_ERROR', 'Failed to fetch categories', error);
     }
   }
@@ -679,7 +699,7 @@ export class DatabaseStorage implements IStorage {
 
   async createClassified(classified: InsertClassified): Promise<Classified> {
     try {
-      const [result] = await this.db.insert(classifieds).values([classified as any]).returning();
+      const [result] = await this.getDb().insert(classifieds).values([classified as any]).returning();
       if (!result) {
         throw new Error('Classified creation failed.');
       }
@@ -758,7 +778,7 @@ export class DatabaseStorage implements IStorage {
 
   async createBusiness(business: InsertBusiness): Promise<Business> {
     try {
-      const [result] = await this.db.insert(businesses).values([business as any]).returning();
+      const [result] = await this.getDb().insert(businesses).values([business as any]).returning();
       if (!result) {
         throw new Error('Business creation failed.');
       }
@@ -813,7 +833,7 @@ export class DatabaseStorage implements IStorage {
 
   async createReview(review: InsertReview): Promise<Review> {
     try {
-      const [result] = await this.db.insert(reviews).values([review as any]).returning();
+      const [result] = await this.getDb().insert(reviews).values([review as any]).returning();
       if (!result) {
         throw new Error('Review creation failed.');
       }
@@ -840,7 +860,7 @@ export class DatabaseStorage implements IStorage {
 
   async getTrendingArticles(limit = 5): Promise<ArticleWithRelations[]> {
     try {
-      const result = await this.db
+      const result = await this.getDb()
         .select({
           id: articles.id,
           title: articles.title,
@@ -880,12 +900,12 @@ export class DatabaseStorage implements IStorage {
             name: provinces.name,
             code: provinces.code,
           },
-          authorUsername: users.firstName,
+          authorName: adminUsers.first_name,
         })
         .from(articles)
         .leftJoin(categories, eq(articles.categoryId, categories.id))
         .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-        .leftJoin(users, eq(articles.authorId, users.id))
+        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
         .where(gte(articles.publishedAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)))
         .orderBy(desc(articles.views))
         .limit(limit);
@@ -939,9 +959,9 @@ export class DatabaseStorage implements IStorage {
         with: { business: true },
         orderBy: [desc(reviews.createdAt)],
       });
-      return userReviews.map(r => ({ 
+      return userReviews.map((r: any) => ({ 
         ...r, 
-        businessName: r.business.name,
+        businessName: (r as any).business?.name || 'Unknown Business',
       }));
     } catch (error) {
       return handleStorageError('DATABASE_ERROR', 'Failed to fetch user reviews', error);
@@ -950,7 +970,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteClassified(id: number): Promise<void> {
     try {
-      await this.db.delete(classifieds).where(eq(classifieds.id, id));
+      await this.getDb().delete(classifieds).where(eq(classifieds.id, id));
     } catch (error) {
       handleStorageError('DATABASE_ERROR', `Failed to delete classified with id ${id}`, error);
     }
@@ -958,7 +978,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteReview(id: number): Promise<void> {
     try {
-      await this.db.delete(reviews).where(eq(reviews.id, id));
+      await this.getDb().delete(reviews).where(eq(reviews.id, id));
     } catch (error) {
       handleStorageError('DATABASE_ERROR', `Failed to delete review with id ${id}`, error);
     }
@@ -970,7 +990,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserPreferences(userId: string): Promise<UserPreferencesData | undefined> {
     try {
-      const result = await this.db.query.userPreferences.findFirst({
+      const result = await this.getDb().query.userPreferences.findFirst({
         where: eq(userPreferences.userId, userId),
       });
       return result as UserPreferencesData | undefined;

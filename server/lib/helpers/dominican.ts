@@ -93,9 +93,8 @@ export function slugify(text: string): string {
 export function handleStorageError<T>(errorCode: keyof typeof DR_ERRORS, message: string, error: unknown): T {
   console.error(`Storage Error [${errorCode}]: ${message}`, error);
   
-  // Return appropriate default values based on expected return type
-  // This is a type assertion that should be used carefully
-  return [] as T; // Most storage methods return arrays
+  // Throw the actual error for debugging instead of returning empty array
+  throw new Error(`${errorCode}: ${message} - ${error}`);
 }
 
 // Production-ready error handler with Spanish messages

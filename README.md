@@ -1,206 +1,206 @@
 # SafraReport - Dominican Republic News & Marketplace Platform
 
-SafraReport is a comprehensive news and marketplace platform designed specifically for the Dominican Republic market, featuring articles, classified ads, business reviews, and secure admin management.
+A modern, mobile-first news and marketplace platform built for the Dominican Republic, featuring news feeds, classifieds, reviews, and comprehensive admin tools.
 
-## 🚀 Features
+## 🏗️ Architecture
 
-- **News Articles**: Breaking news, featured stories, and categorized content
-- **Classified Ads**: User-generated marketplace with moderation
-- **Business Reviews**: Community-driven business ratings and reviews
-- **Admin Dashboard**: Secure admin panel with role-based access control
-- **Mobile-Optimized**: Responsive design for Dominican mobile networks
-- **Multi-Language**: Spanish-first with English support
-- **Secure Authentication**: bcrypt password hashing and JWT tokens
-- **Row Level Security**: Database-level access control
-- ⭐ Featured articles and hero content sections
-- 📱 Mobile-first responsive design (optimized for 70% mobile users)
-- 🌐 Spanish language support with Dominican idioms
+**Monorepo Structure:**
+- `client/` - React frontend with Vite
+- `server/` - Express.js backend with TypeScript
+- `shared/` - Shared types, schemas, and DTOs
+- `packages/` - Additional packages
 
-### Marketplace & Classifieds
-- 🏪 Classified ads system with 8 categories (Vehículos, Inmuebles, Empleos, etc.)
-- 📍 Province-based location filtering for Dominican Republic
-- 📸 Image gallery support with drag & drop uploads
-- 💬 WhatsApp integration for direct contact
-- ⏰ Auto-expiration after 30 days
+**Technology Stack:**
+- **Frontend:** React 18, Vite, Tailwind CSS, React Query
+- **Backend:** Express.js, TypeScript, Drizzle ORM, Supabase
+- **Database:** PostgreSQL (Neon)
+- **Authentication:** Supabase Auth
+- **Monorepo:** pnpm workspaces, Turborepo, Changesets
 
-### Business Reviews
-- ⭐ 1-5 star rating system for local businesses
-- 💰 Price indicators in DOP (Dominican Peso)
-- 🏢 6 business categories (Restaurantes, Hoteles, Productos Tech, etc.)
-- 📝 User-generated reviews with photo uploads
-
-### Admin CMS
-- 🔐 JWT-based authentication with role-based access (admin, editor, moderator)
-- 📊 Real-time dashboard with statistics and metrics
-- ✏️ Rich text editor with TipTap (bold, italic, headings, lists, links, images, tables)
-- 📸 Multi-file upload support (images and videos)
-- 📅 Scheduled publishing with date picker
-- 👥 User management and moderation queue
-- 📈 Audit logging with CSV export
-- 🗄️ Database management tools
-
-## Technology Stack
-
-### Frontend
-- **React 18** with TypeScript (strict mode)
-- **Vite** for fast builds and HMR
-- **Tailwind CSS** with custom Liquid Glass design system
-- **shadcn/ui** components with Radix UI primitives
-- **TanStack Query** for server state management
-- **Wouter** for lightweight routing
-
-### Backend
-- **Node.js** with Express.js server
-- **PostgreSQL** with Drizzle ORM for type-safe database operations
-- **Multer** for file uploads
-- **JWT** authentication
-- **Zod** validation
-
-### Design System
-- **Liquid Glass Theme**: Apple-inspired glassmorphism with frost effects
-- **Mobile-First**: Optimized for Caribbean internet speeds
-- **Responsive**: Desktop and mobile adaptations
-
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 20+
+- pnpm 10.11.0+
 - PostgreSQL database
-- Environment variables configured
 
 ### Installation
+
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/safrareport.git
+git clone https://github.com/your-org/safrareport.git
 cd safrareport
 
 # Install dependencies
-npm install
+pnpm install
 
 # Set up environment variables
 cp .env.example .env
-# Configure your DATABASE_URL and other secrets
+# Edit .env with your database and Supabase credentials
 
-# Run database migrations
-npm run db:push
+# Start development servers
+pnpm dev:all
+```
 
-# Start development server
-npm run dev
+### Development Commands
+
+```bash
+# Start all services in development mode
+pnpm dev:all
+
+# Build all packages
+pnpm build:all
+
+# Run tests across all packages
+pnpm test:all
+
+# Lint all packages
+pnpm lint:all
+
+# Type check all packages
+pnpm type-check
+```
+
+## 📦 Monorepo Tooling
+
+### Turborepo
+- **Parallel builds** and caching for faster development
+- **Dependency management** across packages
+- **Incremental builds** with intelligent caching
+
+```bash
+# Run Turborepo commands
+pnpm turbo build    # Build all packages
+pnpm turbo dev      # Start all dev servers
+pnpm turbo test     # Run all tests
+```
+
+### Changesets
+- **Version management** for packages
+- **Automated releases** with semantic versioning
+- **Release notes** generation
+
+```bash
+# Create a changeset
+pnpm changeset
+
+# Version packages
+pnpm version-packages
+
+# Release packages
+pnpm release
+```
+
+### Storybook
+- **UI component documentation**
+- **Interactive component testing**
+- **Design system showcase**
+
+```bash
+# Start Storybook
+pnpm storybook
+
+# Build Storybook
+pnpm build-storybook
+```
+
+## 🏛️ Project Structure
+
+```
+safrareport/
+├── client/                 # React frontend
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── pages/         # Page components
+│   │   ├── hooks/         # Custom React hooks
+│   │   └── utils/         # Utility functions
+│   └── package.json
+├── server/                # Express.js backend
+│   ├── src/
+│   │   ├── routes/        # API routes
+│   │   ├── middleware/    # Express middleware
+│   │   ├── services/      # Business logic
+│   │   └── utils/         # Utility functions
+│   └── package.json
+├── shared/                # Shared types and schemas
+│   ├── src/
+│   │   ├── schema.ts      # Drizzle schemas
+│   │   ├── types.ts       # TypeScript types
+│   │   └── enums.ts       # Common enums
+│   └── package.json
+├── packages/              # Additional packages
+├── .storybook/           # Storybook configuration
+├── turbo.json            # Turborepo configuration
+├── .changeset/           # Changesets configuration
+└── pnpm-workspace.yaml   # pnpm workspace configuration
+```
+
+## 🔧 Development
+
+### Adding New Packages
+
+1. Create a new directory in `packages/`
+2. Initialize with `package.json`
+3. Add to `pnpm-workspace.yaml`
+4. Update `turbo.json` pipeline if needed
+
+### Shared Dependencies
+
+Use workspace dependencies for internal packages:
+
+```json
+{
+  "dependencies": {
+    "@safra/shared": "workspace:*"
+  }
+}
 ```
 
 ### Environment Variables
-```env
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-DATABASE_URL=postgresql://user:password@host:port/database?sslmode=require
-JWT_SECRET=your-jwt-secret-key
-NODE_ENV=development
-PORT=5000
-```
 
-## Project Structure
+- Copy `.env.example` to `.env`
+- Configure database and Supabase credentials
+- Use different `.env` files for different environments
 
-```
-├── client/src/          # React frontend
-│   ├── components/      # Reusable UI components
-│   ├── pages/          # Page components
-│   └── lib/            # Utility functions
-├── server/             # Express backend
-│   ├── admin-routes.ts # Admin API endpoints
-│   ├── routes.ts       # Public API endpoints
-│   └── storage.ts      # Database interface
-├── shared/             # Shared types and schemas
-│   └── schema.ts       # Drizzle database schema
-└── uploads/           # File upload directory
-```
+## 🧪 Testing
 
-## API Endpoints
-
-### Public API
-- `GET /api/articles` - Get paginated articles
-- `GET /api/articles/featured` - Get featured articles
-- `GET /api/articles/breaking` - Get breaking news
-- `GET /api/clasificados` - Get classified ads
-- `GET /api/resenas` - Get business reviews
-
-### Admin API
-- `POST /api/admin/login` - Admin authentication
-- `GET /api/admin/stats` - Dashboard statistics
-- `POST /api/admin/articles` - Create/update articles
-- `GET /api/admin/moderation` - Moderation queue
-- `GET /api/admin/audit-logs` - Audit history
-
-## Deployment
-
-### Render Deployment (Recommended)
-This project is optimized for Render deployment with Supabase PostgreSQL. 
-
-For detailed deployment instructions, see [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md).
-
-**Quick Deploy:**
-1. Connect repository to Render
-2. Render auto-detects `render.yaml` 
-3. Automatic deployment with Supabase integration
-
-**Local Development:**
 ```bash
-npm run dev    # Start development server
-npm run build  # Build for production
-npm start      # Start production server
+# Run all tests
+pnpm test:all
+
+# Run tests with coverage
+pnpm test:coverage
+
+# Run tests with UI
+pnpm test:ui
+
+# Run specific package tests
+pnpm --filter @safra/client test
 ```
 
-## Features in Detail
+## 📚 Documentation
 
-### Real-Time Data
-- Fuel prices with auto-refresh
-- Exchange rates (USD/DOP)
-- Weather information
-- Breaking news ticker
+- [Deployment Guide](./docs/deployment/RENDER_DEPLOYMENT.md)
+- [API Documentation](./docs/api/README.md)
+- [Component Library](./docs/components/README.md)
 
-### Content Management
-- Multi-category article support
-- Scheduled publishing
-- Image and video uploads
-- SEO optimization with meta tags
+## 🤝 Contributing
 
-### User Experience
-- Spanish error messages
-- Loading states and skeletons
-- Toast notifications
-- Responsive navigation
-
-## Development
-
-### Database Schema
-Uses Drizzle ORM with PostgreSQL:
-- Articles with categories and authors
-- Classified ads with provinces
-- Business reviews with ratings
-- User management with roles
-- Audit logs for admin actions
-
-### Error Handling
-- Comprehensive validation with Zod
-- Spanish error messages for Dominican users
-- Detailed logging for debugging
-- Graceful fallbacks for connectivity issues
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
+1. Create a feature branch
+2. Make your changes
+3. Add tests if applicable
+4. Create a changeset: `pnpm changeset`
 5. Submit a pull request
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see [LICENSE](./LICENSE) for details.
 
-## Support
+## 🏆 Elite Organization
 
-For support and questions, please open an issue on GitHub or contact the development team.
-
----
-
-**SafraReport** - Delivering hyper-localized news and marketplace experiences for the Dominican Republic. 🇩🇴
+This project follows elite organization principles with:
+- **Structured monorepo** with clear package boundaries
+- **Advanced tooling** (Turborepo, Changesets, Storybook)
+- **Comprehensive testing** and quality assurance
+- **Automated CI/CD** with GitHub Actions
+- **Performance optimization** and caching strategies

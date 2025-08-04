@@ -184,5 +184,4 @@ export const logShutdown = (reason: string) => {
   }, `SafraReport server shutting down: ${reason}`);
 };
 
-// Export the main logger as default
-export default logger;
+// Main logger is exported as named export 'logger'

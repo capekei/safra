@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import jwt from 'jsonwebtoken';
 import { db } from '../db';
-import { adminUsers, adminSessions } from '@shared/schema';
+import { adminUsers, adminSessions } from '@safra/shared';
 import { eq, and } from 'drizzle-orm';
 import type { InferSelectModel } from 'drizzle-orm';
 import { supabase, supabaseAdmin, DatabaseUser, TypedSupabaseClient } from "../supabase";
@@ -142,7 +142,7 @@ export const authenticateAdmin = async (req: AuthRequest, res: Response, next: N
       }
     }
 
-    if (!adminUser || !adminUser.isActive) {
+    if (!adminUser || !adminUser.active) {
       return res.status(403).json({ 
         message: 'Usuario administrador inactivo o no encontrado',
         code: 'ADMIN_INACTIVE_OR_NOT_FOUND'

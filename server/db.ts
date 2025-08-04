@@ -1,9 +1,10 @@
+// Load environment variables (required for DATABASE_URL at module load time)
 import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import * as schema from "@shared/schema";
+import * as schema from "../shared/dist/schema.js";
 
 if (!process.env.DATABASE_URL) {
   console.error('❌ DATABASE_URL environment variable is missing!');

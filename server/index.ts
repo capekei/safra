@@ -1,5 +1,8 @@
-// CRITICAL: Disable SSL certificate verification for Neon database
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
+// CONDITIONAL: Only disable SSL verification in development if explicitly needed
+if (process.env.NODE_ENV === 'development' && process.env.DISABLE_SSL_VERIFY === 'true') {
+  process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
+  console.warn('⚠️  SSL certificate verification disabled for development');
+}
 
 import * as dotenv from 'dotenv';
 dotenv.config();
@@ -10,6 +13,7 @@ import cors from "cors";
 import morgan from "morgan";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { databaseErrorHandler } from "./middleware/database-error-handler";
 
 import { db, pool } from "./db";
 
@@ -28,7 +32,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
-console.log("✅ CORS configured for environment:", process.env.NODE_ENV || 'development');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -69,9 +72,6 @@ app.use((req, res, next) => {
 
 (async () => {
   // Critical deployment checks
-  console.log("🚀 Starting SafraReport server...");
-  console.log("Environment:", process.env.NODE_ENV || 'development');
-  console.log("Port:", process.env.PORT || 4000);
   
   // Validate critical environment variables with masked logging
   if (!process.env.DATABASE_URL) {
@@ -82,7 +82,6 @@ app.use((req, res, next) => {
   
   // Comprehensive DATABASE_URL validation
   const dbUrlLength = process.env.DATABASE_URL?.length || 0;
-  console.log(`🔍 DB URL length: ${dbUrlLength} characters (masked for security)`);
   
   // Validate URL format and SSL requirement
   const dbUrl = process.env.DATABASE_URL;
@@ -93,7 +92,6 @@ app.use((req, res, next) => {
   
   if (!dbUrl.includes('sslmode=require')) {
     console.warn("⚠️  WARNING: DATABASE_URL missing 'sslmode=require' - may cause deployment issues");
-    console.log("💡 Recommended format: postgresql://user:pass@host:port/db?sslmode=require");
   }
   
   if (dbUrlLength < 50) {
@@ -102,20 +100,13 @@ app.use((req, res, next) => {
     process.exit(1);
   }
   
-  console.log(`✅ DATABASE_URL format validated`);
-  console.log(`🔐 SSL mode: ${dbUrl.includes('sslmode=require') ? 'Required' : 'Not specified'}`);
-  console.log(`🌍 DB Host: ${dbUrl.split('@')[1]?.split('/')[0] || 'Unknown'}`);
   
   // Test database connection with detailed diagnostics
   try {
-    console.log("🔄 Testing database connection...");
-    console.log("🔄 Import drizzle and PostgreSQL packages...");
     
     const { drizzle } = await import("drizzle-orm/node-postgres");
     const { Pool } = await import("pg");
     
-    console.log("✅ Packages imported successfully");
-    console.log("🔄 Creating database connection...");
     
     const testPool = new Pool({ 
       connectionString: process.env.DATABASE_URL,
@@ -126,21 +117,13 @@ app.use((req, res, next) => {
     });
     const db = drizzle(testPool);
     
-    console.log("✅ Database instance created");
-    console.log("🔄 Testing connection with SELECT 1...");
     
     const result = await testPool.query('SELECT 1 as test, NOW() as timestamp');
-    console.log("✅ Database connection successful");
-    console.log("📊 Test result:", result.rows);
-    console.log("✅ Database URL configured and tested");
     
     // Test article count for deployment verification (skip on first deploy)
     try {
-      console.log("🔄 Verifying article count...");
       const articleCount = await testPool.query("SELECT COUNT(*) as count FROM articles WHERE published = true");
-      console.log("📰 Published articles count:", articleCount.rows[0]?.count || 0);
     } catch (tableError) {
-      console.log("⚠️ Articles table not found - likely first deployment (this is normal)");
     }
     
   } catch (error) {
@@ -155,13 +138,16 @@ app.use((req, res, next) => {
     // Don't exit - let the app start and handle DB errors gracefully
   }
   
-  console.log("✅ CORS configured for deployment");
   
 
   // await seedAuthors();
   
   const server = await registerRoutes(app);
 
+  // Database error handling middleware (must come before general error handler)
+  app.use(databaseErrorHandler);
+
+  // General error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -174,15 +160,12 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
     if (process.env.NODE_ENV === "development") {
-    console.log('🔄 Development mode: setting up Vite...');
     try {
       await setupVite(app, server);
-      console.log('✅ Vite setup completed successfully');
     } catch (error) {
       console.error('❌ Vite setup failed, continuing without it:', error);
     }
   } else {
-    console.log('📦 Production mode: serving static files...');
     serveStatic(app);
   }
 
@@ -194,10 +177,6 @@ app.use((req, res, next) => {
   const host = "0.0.0.0";
   
   server.listen(port, host, () => {
-    console.log(`🚀 SafraReport Server Started Successfully`);
-    console.log(`📍 Listening on: http://${host}:${port}`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 Replit URL: ${process.env.REPLIT_URL || 'Not set'}`);
     log(`serving on port ${port} on host ${host}`);
   });
 })();

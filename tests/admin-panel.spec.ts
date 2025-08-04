@@ -131,7 +131,6 @@ test.describe('Admin Panel E2E Tests', () => {
     // Check if admin API calls were made
     const hasAdminApiCalls = requests.some(url => url.includes('/api/admin/'));
     if (hasAdminApiCalls) {
-      console.log('Admin API calls detected:', requests);
     }
   });
 

@@ -1,113 +1,154 @@
-export interface ArticleWithRelations {
+// Common types for SafraReport client
+export interface Article {
   id: number;
   title: string;
   slug: string;
   excerpt: string;
   content: string;
   featuredImage?: string;
+  videoUrl?: string;
   isBreaking: boolean;
   isFeatured: boolean;
   published: boolean;
   publishedAt: string;
   authorId: number;
   categoryId: number;
-  likes: number;
-  comments: number;
   views: number;
+  likes: number;
   createdAt: string;
   updatedAt: string;
-  authorUsername: string | null;
-  category: {
-    id: number;
-    name: string;
-    slug: string;
-    icon: string;
-    description?: string;
-    createdAt: string;
-  };
 }
 
-export interface ClassifiedWithRelations {
-  id: number;
-  title: string;
-  description: string;
-  price?: string;
-  currency: string;
-  images: string[];
-  contactName: string;
-  contactPhone: string;
-  contactWhatsapp?: string;
-  contactEmail?: string;
-  provinceId?: number;
-  municipality?: string;
-  categoryId: number;
-  active: boolean;
-  featured: boolean;
-  expiresAt: string;
-  createdAt: string;
-  category: {
-    id: number;
-    name: string;
-    slug: string;
-    icon: string;
-  };
-  province?: {
-    id: number;
-    name: string;
-    code: string;
-  };
-}
-
-export interface BusinessWithRelations {
+export interface Category {
   id: number;
   name: string;
   slug: string;
+  icon?: string;
   description?: string;
-  address?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ArticleWithRelations extends Article {
+  category?: Category;
+  author?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+export interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Province {
+  id: number;
+  name: string;
+  code: string;
+  region: string;
+}
+
+export interface Classified {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  categoryId: number;
+  provinceId: number;
+  images?: string[];
+  contactPhone?: string;
+  contactEmail?: string;
+  userId: string;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Business {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  address: string;
   phone?: string;
-  whatsapp?: string;
   email?: string;
   website?: string;
-  images: string[];
-  priceRange: number;
   categoryId: number;
-  provinceId?: number;
-  municipality?: string;
-  averageRating: string;
+  provinceId: number;
+  rating: number;
   totalReviews: number;
+  images?: string[];
   verified: boolean;
   active: boolean;
   createdAt: string;
-  category: {
-    id: number;
-    name: string;
-    slug: string;
-    icon: string;
-  };
-  province?: {
-    id: number;
-    name: string;
-    code: string;
-  };
+  updatedAt: string;
 }
 
-export interface ReviewType {
+export interface Review {
   id: number;
   businessId: number;
-  reviewerName: string;
-  reviewerEmail?: string;
+  userId: string;
   rating: number;
-  title?: string;
+  title: string;
   content: string;
-  images: string[];
   helpful: number;
-  approved: boolean;
+  verified: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
+// API Response types
+export interface ApiResponse<T> {
+  data: T;
+  success: boolean;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+// Form types
+export interface ContactForm {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
+export interface NewsletterForm {
+  email: string;
+  preferences?: string[];
+}
+
+// Routes configuration
 export const ROUTES = {
   HOME: '/',
-  ACCOUNT: "/cuenta",
-  ADMIN: "/admin",
+  NOTICIAS: '/noticias',
+  CATEGORIA: '/categoria',
+  CLASIFICADOS: '/clasificados',
+  RESENAS: '/resenas',
+  CUENTA: '/cuenta',
   LOGIN: '/login',
+  ADMIN: '/admin',
+  USER_DASHBOARD: '/cuenta/dashboard',
+  POST_CLASSIFIED: '/cuenta/clasificado',
+  POST_REVIEW: '/cuenta/resena',
+  NEWS_PREFERENCES: '/cuenta/preferencias'
 } as const;

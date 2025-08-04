@@ -1,7 +1,11 @@
 import { defineConfig } from "drizzle-kit";
+import { config } from "dotenv";
+
+// Load environment variables from .env file
+config();
 
 export default defineConfig({
-  schema: "./shared/schema.ts",
+  schema: "./shared/src/schema.ts",
   out: "./migrations",
   dialect: "postgresql",
   dbCredentials: {
