@@ -1,32 +1,60 @@
 import { pgTable, serial, text, integer, timestamp, boolean, json, varchar, decimal } from 'drizzle-orm/pg-core';
 
-// Users table (matching existing database structure)
+// Enhanced users table with unified authentication
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
-  email: text('email'),
+  email: text('email').unique().notNull(),
+  password_hash: text('password_hash'), // New field for unified JWT auth
   first_name: text('first_name'),
   last_name: text('last_name'),
   profile_image_url: text('profile_image_url'),
-  role: text('role'),
-  created_at: timestamp('created_at'),
-  updated_at: timestamp('updated_at'),
+  role: text('role').default('user'),
+  email_verified: boolean('email_verified').default(false),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow(),
+  last_login: timestamp('last_login'),
+  is_active: boolean('is_active').default(true),
+  
+  // Security enhancements
+  failed_login_attempts: integer('failed_login_attempts').default(0),
+  locked_until: timestamp('locked_until'),
+  password_changed_at: timestamp('password_changed_at').defaultNow(),
+  two_factor_enabled: boolean('two_factor_enabled').default(false),
+  two_factor_secret: text('two_factor_secret'),
+  
+  // Account verification
+  email_verification_token: text('email_verification_token'),
+  email_verification_expires: timestamp('email_verification_expires'),
+  password_reset_token: text('password_reset_token'),
+  password_reset_expires: timestamp('password_reset_expires'),
 });
 
-// Admin users table
+// Enhanced admin users table with security features
 export const adminUsers = pgTable('admin_users', {
   id: serial('id').primaryKey(),
   username: text('username').notNull().unique(),
   email: text('email').notNull().unique(),
-  password: text('password').notNull(),
+  password_hash: text('password_hash').notNull(), // Renamed for consistency
   first_name: text('first_name'),
   last_name: text('last_name'),
   avatar: text('avatar'),
-  replit_id: text('replit_id'),
   role: text('role').default('admin'),
   active: boolean('active').default(true),
   last_login: timestamp('last_login'),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
+  
+  // Enhanced security features
+  failed_login_attempts: integer('failed_login_attempts').default(0),
+  locked_until: timestamp('locked_until'),
+  password_changed_at: timestamp('password_changed_at').defaultNow(),
+  two_factor_enabled: boolean('two_factor_enabled').default(false),
+  two_factor_secret: text('two_factor_secret'),
+  last_ip_address: text('last_ip_address'),
+  
+  // Session management
+  session_token: text('session_token'),
+  session_expires: timestamp('session_expires'),
 });
 
 // Articles table (matching existing database structure)
@@ -130,16 +158,35 @@ export const provinces = pgTable('provinces', {
 });
 
 
-// Admin sessions table
-export const adminSessions = pgTable('admin_sessions', {
+// Enhanced session management for both users and admins
+export const userSessions = pgTable('user_sessions', {
   id: text('id').primaryKey(),
-  admin_user_id: integer('admin_user_id').references(() => adminUsers.id),
+  user_id: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
   token: text('token').notNull().unique(),
+  refresh_token: text('refresh_token').unique(),
   expires_at: timestamp('expires_at').notNull(),
+  refresh_expires_at: timestamp('refresh_expires_at').notNull(),
   ip_address: text('ip_address'),
   user_agent: text('user_agent'),
-  created_at: timestamp('created_at').defaultNow(),
+  device_info: json('device_info'),
   is_active: boolean('is_active').default(true),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow(),
+});
+
+// Admin sessions table (enhanced)
+export const adminSessions = pgTable('admin_sessions', {
+  id: text('id').primaryKey(),
+  admin_user_id: integer('admin_user_id').references(() => adminUsers.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  refresh_token: text('refresh_token').unique(),
+  expires_at: timestamp('expires_at').notNull(),
+  refresh_expires_at: timestamp('refresh_expires_at').notNull(),
+  ip_address: text('ip_address'),
+  user_agent: text('user_agent'),
+  device_info: json('device_info'),
+  is_active: boolean('is_active').default(true),
+  created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
 });
 

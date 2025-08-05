@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "@types/react", "@types/react-dom"]
+  },
+  "include": [
+    "src/client/**/*"
+  ],
+  "exclude": [
+    "src/client/**/*.test.ts",
+    "src/client/**/*.test.tsx",
+    "src/client/**/*.spec.ts", 
+    "src/client/**/*.spec.tsx"
+  ]
+}

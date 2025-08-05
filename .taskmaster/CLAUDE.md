@@ -421,283 +421,399 @@ _This guide ensures Claude Code has immediate access to Task Master's essential 
 ## 🚀 Project Overview
 **Name**: SafraReport  
 **Type**: Dominican Republic News and Marketplace Platform  
-**Stage**: Production-Ready (100% backend tasks complete)  
+**Stage**: Production-Ready (Migrating to Render)  
 **Repository**: /Users/josealvarez/Desktop/SafraReport  
-**Architecture**: Monorepo with TypeScript
+**Architecture**: Converting from Monorepo to Single Repo
+
+## 🎯 Current Migration
+**Goal**: Consolidate everything to Render (hosting + database) and simplify to single repo structure
+
+### Migration Status
+- [ ] Convert monorepo to single repo
+- [ ] Migrate database from Neon/Supabase to Render PostgreSQL
+- [ ] Replace Supabase Auth with simple JWT auth
+- [ ] Deploy everything to Render
+- [ ] Organize root-level files properly
 
 ## 🏗️ Architecture
+
+### Current State (Monorepo)
+- **Structure**: pnpm workspaces with Turborepo
+- **Issues**: pnpm/Vite conflicts, complex build process
+- **Packages**: client/, server/, shared/, packages/
+
+### Target State (Single Repo)
+- **Structure**: Unified src/ directory
+- **Package Manager**: npm (simpler, no conflicts)
+- **Build**: Direct commands, no turborepo
 
 ### Frontend
 - **Framework**: React 18.3.1 with TypeScript
 - **Build Tool**: Vite 6.0.0
-- **Styling**: Tailwind CSS 3.4.17
+- **Styling**: Tailwind CSS 3.4.17 + shadcn/ui
 - **State Management**: @tanstack/react-query 5.60.5
 - **Routing**: Wouter 3.3.5
 - **Validation**: Zod 3.24.2
-- **Port**: 3000
+- **Port**: 3000 (development)
 
 ### Backend
 - **Runtime**: Node.js v23.11.0
 - **Framework**: Express.js 4.21.2 with TypeScript
 - **ORM**: Drizzle ORM 0.39.3
-- **Authentication**: Supabase Auth + Custom Admin Auth (bcrypt + JWT)
+- **Authentication**: JWT + bcrypt (replacing Supabase Auth)
 - **Logging**: Pino 9.7.0
 - **Security**: Helmet 8.1.0
 - **Port**: 4000
 - **API Style**: REST with OpenAPI documentation
 
 ### Database
-- **Type**: PostgreSQL (Neon/Supabase)
+- **Current**: Split between Neon + Supabase
+- **Target**: Render PostgreSQL only
 - **ORM**: Drizzle ORM 0.39.3
-- **Security**: Row Level Security (RLS) policies
-- **Migration Tool**: Drizzle migrations
-- **Tables**: 12 primary entities
+- **Cost**: $7/month (Render Starter)
 
-### Development Tools
-- **Monorepo**: Turborepo 2.0.0
-- **Package Manager**: pnpm 10.11.0
-- **Testing**: Vitest 3.2.4 + Playwright 1.54.1
-- **Documentation**: Storybook 8.0.0
-- **Version Management**: Changesets 2.28.0
+### Hosting
+- **Platform**: Render
+- **Services**: Web Service + PostgreSQL
+- **Total Cost**: ~$14-20/month
+- **Region**: Oregon (US West)
 
-## 📁 Project Structure
+## 📁 Target Project Structure
 ```
 SafraReport/
-├── client/                 # React + Vite frontend
-│   ├── src/
-│   │   ├── components/    # 49 reusable UI components
-│   │   ├── pages/        # 28 page components
-│   │   ├── hooks/        # 4 custom React hooks
-│   │   ├── lib/          # 11 utility libraries
-│   │   └── App.tsx       # Main app entry
-├── server/                # Express.js backend
-│   ├── routes/           # API routes (admin, user, docs, seo)
-│   ├── middleware/       # Auth, logging, error handling
-│   ├── database/         # Storage layer (36KB)
-│   └── index.ts         # Server entry point
-├── shared/               # Common types, schemas, DTOs
-├── packages/             # Additional workspace packages
-├── migrations/           # Database migrations
-├── scripts/              # Build and deployment scripts
-├── tests/                # Integration and unit tests
-└── docs/                 # Documentation
+├── src/                      # All source code
+│   ├── client/              # Frontend (React/Vite)
+│   │   ├── components/      # UI components
+│   │   ├── pages/          # Page components
+│   │   ├── hooks/          # Custom hooks
+│   │   ├── lib/            # Utilities
+│   │   └── App.tsx         # App entry
+│   ├── server/              # Backend (Express)
+│   │   ├── routes/         # API routes
+│   │   ├── middleware/     # Express middleware
+│   │   ├── database/       # DB connection & queries
+│   │   ├── auth/           # JWT authentication
+│   │   └── index.ts        # Server entry
+│   └── shared/              # Shared types/utils
+│       ├── types/          # TypeScript types
+│       └── utils/          # Shared utilities
+├── public/                   # Static assets
+├── dist/                     # Build output (gitignored)
+├── config/                   # Configuration files
+│   └── render/              # Render-specific configs
+├── scripts/                  # Utility scripts
+│   ├── migrate-db.ts        # Database migration
+│   ├── seed-db.ts           # Database seeding
+│   └── migrate-to-single.sh # Monorepo migration
+├── docs/                     # Documentation
+│   ├── API.md               # API documentation
+│   ├── SETUP.md             # Setup guide
+│   └── DEPLOYMENT.md        # Deployment guide
+├── tests/                    # Test files
+│   ├── unit/                # Unit tests
+│   └── integration/         # Integration tests
+├── .env.example             # Example environment variables
+├── .env                     # Local environment (gitignored)
+├── .eslintrc.js             # ESLint configuration
+├── .gitignore               # Git ignore patterns
+├── .prettierrc              # Prettier configuration
+├── package.json             # Single package.json
+├── README.md                # Project documentation
+├── render.yaml              # Render deployment config
+├── tsconfig.json            # TypeScript configuration
+└── vite.config.ts           # Vite configuration
 ```
 
 ## 🔑 Key Features
 
 ### Currently Working ✅
-- ✅ User Registration/Login (Supabase Auth)
-- ✅ Admin Authentication (bcrypt + JWT)
-- ✅ Create/Read/Update/Delete Classifieds
+- ✅ User Registration/Login (Supabase - to be replaced)
+- ✅ Admin Authentication (custom JWT)
 - ✅ News Articles Management
+- ✅ Classified Ads CRUD
 - ✅ Business Directory
 - ✅ Business Reviews System
-- ✅ Image Upload for Listings
+- ✅ Categories & Filtering
 - ✅ Search Functionality
-- ✅ Categories Filter
+- ✅ Image Upload
 - ✅ Admin Panel with Audit Logging
 - ✅ Text-to-Speech Accessibility
 - ✅ Floating Audio Player
 - ✅ Social Media Integration
 
-### Need to Implement 📋
-- [ ] Payment Processing
-- [ ] Email Notifications
-- [ ] Advanced Search Filters
+### In Migration 🔄
+- 🔄 Converting monorepo → single repo
+- 🔄 Supabase Auth → Simple JWT auth
+- 🔄 Neon + Supabase DB → Render PostgreSQL
+- 🔄 pnpm → npm
+- 🔄 Complex builds → Simple builds
+
+### Future Enhancements 📋
+- [ ] Payment Processing (Stripe/PayPal)
+- [ ] Email Notifications (SendGrid/SES)
+- [ ] SMS Notifications
+- [ ] Advanced Search with Filters
 - [ ] User Messaging System
 - [ ] Real-time Updates (WebSocket)
 - [ ] Mobile App (React Native)
-- [ ] Redis Caching Layer
+- [ ] Redis Caching
 - [ ] Full-text Search
-- [ ] International Expansion (Multi-language)
+- [ ] Analytics Dashboard
 
 ## 🗄️ Database Schema
 
-### Core Tables (12 Primary Entities)
+### Core Tables (12 Entities)
 
 **User Management**
-- `users` - Supabase user profiles
+- `users` - User profiles (adding password field for JWT auth)
 - `admin_users` - Admin authentication with bcrypt
 - `admin_sessions` - Secure session management
 - `user_preferences` - User customization settings
 
 **Content Management**
-- `articles` - News articles with rich metadata
+- `articles` - News articles with metadata
 - `categories` - Content categorization
 - `classifieds` - Marketplace listings
 - `businesses` - Business directory
 - `reviews` - Business reviews and ratings
 
-**Geographic & Audit**
+**Geographic & System**
 - `provinces` - Dominican Republic provinces
 - `audit_logs` - Admin action tracking
-- `classified_categories` & `business_categories` - Taxonomy
+- `classified_categories` - Classified taxonomy
+- `business_categories` - Business taxonomy
 
 ### Key Relationships
 - `articles.author_id → admin_users.id`
-- `articles.category_id → categories.id`
 - `classifieds.user_id → users.id`
 - `reviews.business_id → businesses.id`
-- `admin_sessions.admin_user_id → admin_users.id`
+- `reviews.user_id → users.id`
 
 ## 🔧 Environment Variables
 ```bash
-# Server
-NODE_ENV=development
+# Application
+NODE_ENV=production
 PORT=4000
-DATABASE_URL=postgresql://[connection]
-JWT_SECRET=[secure-secret]
-SESSION_SECRET=[secure-secret]
+FRONTEND_URL=https://safrareport.onrender.com
+API_PREFIX=/api
 
-# Supabase
-SUPABASE_URL=[your-project-url]
-SUPABASE_ANON_KEY=[your-anon-key]
-SUPABASE_SERVICE_KEY=[your-service-key]
+# Database (Render PostgreSQL)
+DATABASE_URL=postgresql://user:pass@host:5432/safrareport
 
-# Client
-VITE_API_URL=http://localhost:4000
-VITE_APP_NAME=SafraReport
-VITE_SUPABASE_URL=[your-project-url]
-VITE_SUPABASE_ANON_KEY=[your-anon-key]
+# Security
+JWT_SECRET=[auto-generated-by-render]
+SESSION_SECRET=[auto-generated-by-render]
+BCRYPT_ROUNDS=12
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
+RATE_LIMIT_MAX_REQUESTS=100
+
+# File Upload
+UPLOAD_DIR=./uploads
+MAX_FILE_SIZE=10485760  # 10MB
+
+# Email (Future)
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+
+# Monitoring (Optional)
+SENTRY_DSN=
+LOG_LEVEL=info
 ```
 
-## 🔐 Security Implementation
+## 🐛 Issues & Solutions
 
-### Authentication Systems
-- **Primary Users**: Supabase Auth
-- **Admin Users**: Custom bcrypt + JWT
-- **Sessions**: Secure HTTP-only cookies
-- **Database**: Row Level Security (RLS)
+### Current Problems 🔴
+1. **Monorepo Complexity**: pnpm/Vite chunk resolution errors
+   - Solution: Convert to single repo with npm
+2. **Multiple Databases**: Expensive and complex
+   - Solution: Consolidate to Render PostgreSQL
+3. **Auth Complexity**: Supabase + custom admin auth
+   - Solution: Simple JWT for everything
 
-### Security Features
-- ✅ **Password Hashing**: bcrypt with 12 salt rounds
-- ✅ **Rate Limiting**: Express rate limiter on auth endpoints
-- ✅ **CSRF Protection**: CSRF tokens for state-changing operations
-- ✅ **Security Headers**: Helmet.js implementation
-- ✅ **Input Validation**: Zod schemas for all inputs
-- ✅ **Audit Logging**: Comprehensive admin action tracking
-
-## 🐛 Current Issues
-
-### Critical 🔴
-- Vite/pnpm chunk resolution error (ERR_MODULE_NOT_FOUND)
-- NODE_TLS_REJECT_UNAUTHORIZED security warning
-- Port 4000 sometimes stays occupied after crash
-
-### To Fix 🟡
-- Dev script shows "Next.js" instead of "Vite"
-- Multiple dotenv injections in logs
-- Missing shadcn/ui component imports (@/components/ui/toaster)
-- Authentication consolidation needed (multiple auth systems)
-- Some test coverage gaps in frontend components
+### Fixed Issues ✅
+- ✅ Hardcoded credentials removed
+- ✅ Secure session management implemented
+- ✅ RLS policies added
+- ✅ Legacy auth bypasses eliminated
 
 ## 🚦 Commands
 
-### Development
+### Current (Monorepo with pnpm)
 ```bash
-pnpm dev:all          # Start all services in parallel
+pnpm run dev:all      # Start everything
 pnpm build:all        # Build all packages
-pnpm test:all         # Run all tests
-
-# Individual packages
-pnpm --filter @safra/client dev
-pnpm --filter @safra/server test
-
-# Fix common issues
-lsof -ti :4000 | xargs kill -9  # Kill port 4000
-rm -rf node_modules pnpm-lock.yaml && npm install  # Fix pnpm issues
 ```
 
-## 📊 Performance & Scalability
+### After Migration (Single Repo with npm)
+```bash
+# Development
+npm run dev           # Start frontend + backend
+npm run dev:client    # Frontend only
+npm run dev:server    # Backend only
 
-### Frontend Optimizations
-- Vite build system for fast development
-- Code splitting with dynamic imports
-- React Query for server state caching
-- LazyImage component for image optimization
-- Tailwind CSS with purging
+# Building
+npm run build         # Build everything
+npm run build:client  # Build frontend
+npm run build:server  # Build backend
 
-### Backend Optimizations
-- Drizzle ORM for type-safe queries
-- PostgreSQL connection pooling
-- Pino structured logging
-- Efficient middleware pipeline
+# Production
+npm start            # Start production server
 
-### Database Performance
-- Proper indexing on frequently queried columns
-- RLS policies for security without performance impact
-- JSON fields for efficient complex data storage
+# Database
+npm run db:migrate    # Run migrations
+npm run db:seed      # Seed database
+npm run db:reset     # Reset and seed
 
-## 🌐 Deployment & Infrastructure
+# Code Quality
+npm run lint         # ESLint check
+npm run lint:fix     # Fix linting issues
+npm run format       # Prettier format
+npm run typecheck    # TypeScript check
+npm run test         # Run tests
 
-### Production Environment
-- **Database**: Neon PostgreSQL
-- **Hosting**: Railway/Render ready
-- **SSL/TLS**: Certificate management configured
-- **Monitoring**: Health checks at /health endpoint
+# Utilities
+npm run clean        # Clean build artifacts
+npm run analyze      # Bundle analysis
+```
 
-### Observability
-- Structured JSON logging with Pino
-- Comprehensive error boundaries
-- Request correlation IDs
-- Complete admin audit trail
+## 📊 Performance & Costs
+
+### Cost Analysis
+| Service | Before | After | Savings |
+|---------|--------|-------|---------|
+| Database | $44/mo (Neon + Supabase) | $7/mo (Render) | $37/mo |
+| Hosting | Variable | $7/mo (Render) | Predictable |
+| **Total** | **~$50+/mo** | **$14-20/mo** | **~65% reduction** |
+
+### Performance Improvements
+- **Install time**: 2-3min → 30-45s (75% faster)
+- **Build time**: 45-60s → 15-20s (66% faster)
+- **Deploy time**: 5-7min → 2-3min (60% faster)
+- **Dev startup**: 30s → 10s (66% faster)
+- **Complexity**: 80% reduction
 
 ## 🎯 Business Context
 
 ### Target Market
-- **Location**: Dominican Republic
-- **Main Categories**: Vehicles, Electronics, Real Estate, Jobs, Services
-- **Features**: News, Classifieds, Business Reviews
-- **Competitors**: Corotos, Mercado Libre
+- **Primary Location**: Dominican Republic
+- **Secondary**: Dominican diaspora worldwide
+- **Language**: Spanish (primary), English (secondary)
+- **Demographics**: 18-65, urban and rural
+- **User Types**: Individual sellers, businesses, news readers
 
-### Monetization Plan
-- 💰 Featured Listings
-- 📢 Banner Ads
-- 🏢 Premium Business Accounts
-- 💳 Transaction Fees
+### Main Categories
+1. **Vehicles** (Vehículos)
+2. **Real Estate** (Bienes Raíces)
+3. **Electronics** (Electrónicos)
+4. **Jobs** (Empleos)
+5. **Services** (Servicios)
 
-## 💻 Team & Development
-- **Team Size**: Solo/Small team
-- **Architecture**: Domain-Driven Design with Repository Pattern
-- **Testing**: Unit tests (Vitest) + E2E tests (Playwright)
-- **Documentation**: Storybook for component documentation
+### Competitors
+- Corotos.com.do
+- Mercado Libre Dominicana
+- Facebook Marketplace
+- Local newspapers' classifieds
+
+### Monetization Strategy
+1. **Featured Listings**: Premium placement
+2. **Business Accounts**: Enhanced profiles
+3. **Banner Ads**: Strategic placement
+4. **Transaction Fees**: Future implementation
+
+## 💻 Development Workflow
+
+### Local Development
+1. Clone repository
+2. Copy `.env.example` to `.env`
+3. Install dependencies: `npm install`
+4. Start database: `docker-compose up -d`
+5. Run migrations: `npm run db:migrate`
+6. Start dev server: `npm run dev`
+
+### Git Workflow
+- **Main branch**: `main` (production)
+- **Development**: `develop`
+- **Features**: `feature/description`
+- **Fixes**: `fix/description`
+
+### Code Standards
+- TypeScript strict mode
+- ESLint + Prettier
+- Conventional commits
+- 90%+ test coverage goal
+
+## 🚀 Deployment
+
+### Render Setup
+1. Connect GitHub repository
+2. Create PostgreSQL database
+3. Create Web Service
+4. Configure environment variables
+5. Deploy with render.yaml
+
+### Health Checks
+- **Endpoint**: `/api/health`
+- **Database check**: Included
+- **Response time**: <500ms
+
+### Monitoring
+- Render dashboard metrics
+- Custom health endpoints
+- Error tracking (Sentry ready)
 
 ## 🆘 Current Priorities
 
-### Immediate (Next 30 Days)
-- Fix Vite/pnpm chunk resolution issues
-- Consolidate authentication systems
-- Complete frontend component test coverage
-- Implement performance monitoring
+### Phase 1: Migration (Week 1-2)
+1. ✅ Backup everything
+2. ⏳ Convert monorepo to single repo
+3. ⏳ Fix import paths and dependencies
+4. ⏳ Test with npm locally
 
-### Medium-term (Next 90 Days)
-- Add Redis caching layer
-- Implement full-text search
-- Add real-time features with WebSocket
-- Mobile app planning
+### Phase 2: Database (Week 2-3)
+1. Create Render PostgreSQL
+2. Export data from Neon
+3. Import to Render
+4. Update connection strings
 
-### Long-term (Next 6 Months)
-- Microservices migration for scale
-- International expansion support
-- Advanced analytics dashboard
-- Business intelligence features
+### Phase 3: Auth (Week 3)
+1. Implement JWT auth
+2. Add password field to users
+3. Create auth endpoints
+4. Remove Supabase SDK
 
-## 📝 Technical Achievements
+### Phase 4: Deploy (Week 4)
+1. Push to GitHub
+2. Connect to Render
+3. Configure services
+4. Go live
+5. Cancel old services
 
-### Recent Security Overhaul (100% Complete)
-- Removed all hardcoded credentials
-- Implemented secure session management
-- Added comprehensive RLS policies
-- Eliminated legacy authentication bypasses
+## 📝 Notes
 
-### Architecture Excellence
-- Modern monorepo with clear boundaries
-- Type-safe end-to-end development
-- Comprehensive testing infrastructure
-- Production-ready security implementation
+### Why These Decisions?
+- **Single Repo**: Simpler for small team, fixes pnpm issues
+- **Render**: All-in-one solution, cost-effective
+- **JWT Auth**: Simple, no external dependencies
+- **npm**: Better compatibility, no monorepo issues
 
-### Developer Experience
-- Fast development workflow with Turborepo
-- Excellent tooling (Storybook, TypeScript, testing)
-- Clear documentation and project structure
+### Lessons Learned
+- Start simple, scale when needed
+- Monorepos add complexity
+- External auth can be overkill
+- Consolidation reduces costs
+
+### Future Considerations
+- May add Redis when scale demands
+- Consider CDN for static assets
+- Implement APM when traffic grows
+- Plan mobile app architecture
+
+---
+**Last Updated**: August 2025  
+**Status**: Migration in Progress  
+**Next Review**: After deployment complete
 - Automated quality assurance

@@ -39,41 +39,25 @@ async function seedComprehensiveData() {
   try {
     // 1. Seed Dominican Republic Provinces
     const provincesData = [
-      { name: "Distrito Nacional", code: "DN" },
-      { name: "Santo Domingo", code: "SD" },
-      { name: "Santiago", code: "ST" },
-      { name: "La Vega", code: "LV" },
-      { name: "Puerto Plata", code: "PP" },
-      { name: "San Cristóbal", code: "SC" },
-      { name: "La Romana", code: "LR" },
-      { name: "San Pedro de Macorís", code: "SPM" },
-      { name: "Barahona", code: "BR" },
-      { name: "La Altagracia", code: "LA" },
-      { name: "Azua", code: "AZ" },
-      { name: "Samaná", code: "SM" },
-      { name: "Monte Cristi", code: "MC" },
-      { name: "Valverde", code: "VV" },
-      { name: "Espaillat", code: "ET" },
-      { name: "San Juan", code: "SJ" },
-      { name: "Peravia", code: "PV" },
-      { name: "Duarte", code: "DU" },
-      { name: "María Trinidad Sánchez", code: "MTS" },
-      { name: "Sánchez Ramírez", code: "SR" },
-      { name: "Monseñor Nouel", code: "MN" },
-      { name: "Monte Plata", code: "MP" },
-      { name: "Hato Mayor", code: "HM" },
-      { name: "El Seibo", code: "ES" },
-      { name: "San José de Ocoa", code: "SJO" },
-      { name: "Dajabón", code: "DJ" },
-      { name: "Santiago Rodríguez", code: "STR" },
-      { name: "Elías Piña", code: "EP" },
-      { name: "Bahoruco", code: "BH" },
-      { name: "Independencia", code: "IN" },
-      { name: "Pedernales", code: "PD" },
-      { name: "Hermanas Mirabal", code: "HMB" }
+      { name: "Distrito Nacional", code: "DN", slug: "distrito-nacional" },
+      { name: "Santo Domingo", code: "SD", slug: "santo-domingo" },
+      { name: "Santiago", code: "ST", slug: "santiago" },
+      { name: "La Vega", code: "LV", slug: "la-vega" },
+      { name: "Puerto Plata", code: "PP", slug: "puerto-plata" },
+      { name: "San Cristóbal", code: "SC", slug: "san-cristobal" },
+      { name: "La Romana", code: "LR", slug: "la-romana" },
+      { name: "San Pedro de Macorís", code: "SPM", slug: "san-pedro-de-macoris" }
     ];
 
-    await db.insert(provinces).values(provincesData).onConflictDoNothing();
+    // Try to insert provinces, but handle schema differences gracefully
+    try {
+      await db.insert(provinces).values(provincesData).onConflictDoNothing();
+    } catch (error) {
+      console.log("⚠️ Province insertion failed, table may have different schema:", error.message);
+      // Try with minimal data structure
+      const minimalProvinces = provincesData.map(p => ({ name: p.name, code: p.code }));
+      await db.insert(provinces).values(minimalProvinces).onConflictDoNothing();
+    }
 
     // 2. Seed News Categories
     const categoriesData = [
@@ -99,8 +83,8 @@ async function seedComprehensiveData() {
         email: "admin@safra.do",
         username: "admin",
         password: await bcrypt.hash("admin123", 10),
-        firstName: "Administrador",
-        lastName: "Principal",
+        first_name: "Administrador",
+        last_name: "Principal",
         role: "super_admin",
         active: true
       },
@@ -108,8 +92,8 @@ async function seedComprehensiveData() {
         email: "editor@safra.do", 
         username: "editor",
         password: await bcrypt.hash("editor123", 10),
-        firstName: "Editor",
-        lastName: "Jefe",
+        first_name: "Editor",
+        last_name: "Jefe",
         role: "editor",
         active: true
       }
@@ -117,45 +101,29 @@ async function seedComprehensiveData() {
 
     await db.insert(adminUsers).values(adminUsersData).onConflictDoNothing();
 
-    // 4. Seed Authors (based on admin users - only admins can write news)
-    const adminUsersData = [
-      {
-        name: "Administrador Principal",
-        email: "admin@safra.do",
-        bio: "Editor en jefe de SafraReport con más de 10 años de experiencia en periodismo dominicano.",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400"
-      },
-      {
-        name: "Editor Jefe", 
-        email: "editor@safra.do",
-        bio: "Editor especializado en noticias políticas y económicas de República Dominicana.",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
-      }
-    ];
-
-    await db.insert(adminUsers).values(adminUsersData).onConflictDoNothing();
+    // Note: Authors are now the same as admin users, no separate insert needed
 
     // 5. Seed Regular Users
     const usersData = [
       {
         id: "user_001",
         email: "juan.perez@email.com",
-        firstName: "Juan",
-        lastName: "Pérez",
+        first_name: "Juan",
+        last_name: "Pérez",
         role: "user"
       },
       {
         id: "user_002", 
         email: "maria.rodriguez@email.com",
-        firstName: "María",
-        lastName: "Rodríguez",
+        first_name: "María",
+        last_name: "Rodríguez",
         role: "user"
       },
       {
         id: "user_003",
         email: "carlos.martinez@email.com", 
-        firstName: "Carlos",
-        lastName: "Martínez",
+        first_name: "Carlos",
+        last_name: "Martínez",
         role: "user"
       }
     ];
@@ -174,14 +142,14 @@ async function seedComprehensiveData() {
         slug: "gobierno-anuncia-nuevas-medidas-economicas-2025",
         excerpt: "El presidente Luis Abinader presentó un paquete de medidas económicas enfocadas en el crecimiento del sector turístico y la reducción del desempleo juvenil.",
         content: "En una conferencia de prensa desde el Palacio Nacional, el presidente Luis Abinader anunció una serie de medidas económicas que entrarán en vigor a partir del próximo año. Las medidas incluyen incentivos fiscales para empresas que contraten jóvenes profesionales, así como inversiones millonarias en infraestructura turística. El mandatario destacó que estas iniciativas buscan mantener el crecimiento económico sostenido que ha caracterizado su gestión.",
-        featuredImage: "https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=800",
-        isBreaking: true,
-        isFeatured: true,
+        featured_image: "https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=800",
+        is_breaking: true,
+        is_featured: true,
         published: true,
-        publishedAt: randomRecentDate(),
-        authorId: allAuthors[0].id,
-        categoryId: allCategories.find(c => c.slug === "politica")?.id || 1,
-        provinceId: allProvinces.find(p => p.code === "DN")?.id || 1,
+        published_at: randomRecentDate(),
+        author_id: allAuthors[0].id,
+        category_id: allCategories.find(c => c.slug === "politica")?.id || 1,
+        province_id: allProvinces.find(p => p.code === "DN")?.id || 1,
         status: "published",
         likes: Math.floor(Math.random() * 500) + 100,
         views: Math.floor(Math.random() * 5000) + 1000,

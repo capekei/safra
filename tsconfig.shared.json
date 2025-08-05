@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ES2022",
+    "moduleResolution": "node",
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "outDir": "./src/shared/dist",
+    "rootDir": "./src/shared/src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "lib": ["ES2022"],
+    "types": ["node"]
+  },
+  "include": [
+    "src/shared/src/**/*"
+  ],
+  "exclude": [
+    "src/shared/**/*.test.ts",
+    "src/shared/**/*.spec.ts"
+  ]
+}
