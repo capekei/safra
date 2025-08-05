@@ -10,7 +10,7 @@ import {
   classifieds, 
   businesses, 
   reviews
-} from "../../shared/src/index.js";
+} from "../../shared/index.js";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 

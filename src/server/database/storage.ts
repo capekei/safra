@@ -29,7 +29,7 @@ import {
   type ClassifiedWithRelations,
   type BusinessWithRelations,
   type ReviewWithRelations
-} from "../../shared/src/index.js";
+} from "../../shared/index.js";
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 // dotenv configured in main index.ts entry point

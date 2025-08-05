@@ -1,37 +1,36 @@
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, QueryErrorResetBoundary } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "./components/ui/toaster";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { ErrorBoundary } from "react-error-boundary";
 import { Suspense, Component, ReactNode } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import NotFound from "@/pages/not-found";
-import SimpleTest from "@/pages/simple-test";
-// import TestSimple from "@/pages/test-simple"; // Another likely cause of crash
-import Article from "@/pages/article";
-import ArticlePreview from "@/pages/article-preview";
-import Category from "@/pages/category";
-import Clasificados from "@/pages/clasificados";
-import Resenas from "@/pages/resenas";
-import UIShowcase from "@/pages/ui-showcase";
-import Cuenta from "@/pages/cuenta";
-import Login from "@/pages/login";
+import { useAuth } from "./hooks/useAuth";
+import NotFound from "./pages/not-found";
+import SimpleTest from "./pages/simple-test";
+import Article from "./pages/article";
+import ArticlePreview from "./pages/article-preview";
+import Category from "./pages/category";
+import Clasificados from "./pages/clasificados";
+import Resenas from "./pages/resenas";
+import UIShowcase from "./pages/ui-showcase";
+import Cuenta from "./pages/cuenta";
+import Login from "./pages/login";
 
-// import SafraAdmin from "@/pages/safra-admin"; // File doesn't exist - using AdminDashboard instead
-import UserDashboard from "@/pages/user/dashboard";
-import PostClassified from "@/pages/user/post-classified";
-import PostReview from "@/pages/user/post-review";
-import NewsPreferences from "@/pages/user/news-preferences";
-import AdminDashboard from "@/pages/admin/dashboard";
-import AdminArticles from "@/pages/admin/articles";
-import AdminClassifieds from "@/pages/admin/classifieds";
-import AdminModeration from "@/pages/admin/moderation";
-import AdminDatabase from "@/pages/admin/database";
-import AdminReviews from "@/pages/admin/reviews";
-import AdminUsers from "@/pages/admin/users";
-import AdminAudit from "@/pages/admin/audit";
-import AdminAds from "@/pages/admin/ads";
+// Fix import paths to match actual file structure
+import UserDashboard from "./pages/dashboard";  // This is the user dashboard
+import PostClassified from "./pages/post-classified";
+import PostReview from "./pages/post-review";
+import NewsPreferences from "./pages/news-preferences";
+import AdminDashboard from "./pages/admin/dashboard";
+import AdminArticles from "./pages/articles";  // Admin articles page
+import AdminClassifieds from "./pages/classifieds";
+import AdminModeration from "./pages/moderation";
+import AdminDatabase from "./pages/database";
+import AdminReviews from "./pages/reviews";
+import AdminUsers from "./pages/users";
+import AdminAudit from "./pages/audit";
+import AdminAds from "./pages/ads";
 // import AdminArticlesTest from "@/pages/admin-articles-test"; // Likely cause of crash
 
 // Error Fallback Component

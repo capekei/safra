@@ -10,7 +10,7 @@ import adminRoutes from "./routes/admin/routes";
 // import supabaseAuthRoutes from "./middleware/auth"; // Temporarily disabled - using Neon/Drizzle stack
 import userRoutes from "./routes/user/routes";
 import { db } from "./db";
-import { articles, categories, classifieds, businesses, classifiedCategories, businessCategories, provinces } from "../shared/src/index.js";
+import { articles, categories, classifieds, businesses, classifiedCategories, businessCategories, provinces } from "../shared/index.js";
 import { eq, desc, sql } from "drizzle-orm";
 // import { generateSitemap, generateRSSFeed, generateRobotsTxt } from "./routes/seo";
 import { generateOpenAPISpec } from "./routes/api-docs";

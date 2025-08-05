@@ -1,31 +1,30 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
+set -e
 
-echo "🏗️ Simple build for SafraReport deployment..."
+echo "🏗️  SafraReport Simple Build (Render Ready)"
+echo "==========================================="
 
-# Ensure we're in project root
-cd "$(dirname "$0")/.."
+# Clean previous builds
+echo "🧹 Cleaning previous builds..."
+rm -rf src/client/dist src/server/dist src/shared/dist
 
-# Install dependencies
-echo "📦 Installing dependencies..."
-pnpm install --frozen-lockfile
+# Build shared library (skip type checking for now)
+echo "📦 Building shared library..."
+cd src/shared
+npx tsc --noEmit false --skipLibCheck true
+cd ../..
 
-# Run database setup (for production deployment)
-if [ "$NODE_ENV" = "production" ]; then
-  echo "🗄️  Setting up database..."
-  # Run the safe seed which handles essential data
-  node --import tsx/esm server/seeds/safe-seed.ts || echo "Seeding completed or skipped"
-fi
+# Build client (essential for production)
+echo "🌐 Building client..."
+cd src/client
+npm run build 2>/dev/null || npx vite build
+cd ../..
 
-# Build server
-echo "🔌 Building server..."
-pnpm esbuild server/index.ts \
-  --platform=node \
-  --packages=external \
-  --bundle \
-  --format=esm \
-  --outdir=dist \
-  --external:vite \
-  --external:@vitejs/plugin-react
+# Skip server TypeScript compilation for now - use runtime transpilation
+echo "🖥️  Server will use runtime transpilation (tsx)"
 
-echo "✅ Simple build completed successfully!"
+echo "✅ Simple build completed!"
+echo "📁 Output locations:"
+echo "   - Client: src/client/dist/"  
+echo "   - Server: Runtime transpiled via tsx"
+echo "   - Shared: src/shared/dist/"

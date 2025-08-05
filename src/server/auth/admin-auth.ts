@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "../db";
-import { adminUsers, adminSessions } from "../shared";
+import { adminUsers, adminSessions } from "../../shared";
 import { eq, and } from "drizzle-orm";
 import { DR_ERRORS } from "../lib/helpers/dominican";
 

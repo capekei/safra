@@ -4,7 +4,7 @@ import {
   articles, 
   adminUsers,
   provinces
-} from "../../shared/src/index.js";
+} from "../../shared/index.js";
 import bcrypt from "bcrypt";
 
 // Helper function to create slug from text
