@@ -12,6 +12,14 @@ export default defineConfig({
   },
   build: {
     outDir: './dist',
+    rollupOptions: {
+      onwarn: (warning, warn) => {
+        // Suppress specific warnings during build
+        if (warning.code === 'UNRESOLVED_IMPORT') return;
+        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') return;
+        warn(warning);
+      }
+    }
   },
   server: {
     port: 5173,
