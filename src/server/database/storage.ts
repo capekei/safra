@@ -1,0 +1,1038 @@
+import {
+  articles,
+  adminUsers,
+  categories,
+  classifieds,
+  classifiedCategories,
+  businesses,
+  businessCategories,
+  reviews,
+  provinces,
+  users,
+  userPreferences,
+  type Article,
+  type AdminUser,
+  type Category,
+  type Classified,
+  type ClassifiedCategory,
+  type Business,
+  type BusinessCategory,
+  type Review,
+  type Province,
+  type User,
+  type UpsertUser,
+  type InsertArticle,
+  type InsertClassified,
+  type InsertBusiness,
+  type InsertReview,
+  type ArticleWithRelations,
+  type ClassifiedWithRelations,
+  type BusinessWithRelations,
+  type ReviewWithRelations
+} from "../../shared/src/index.js";
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+// dotenv configured in main index.ts entry point
+
+// Create database connection directly in storage
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+const db = drizzle(pool, { schema: {
+  articles,
+  adminUsers,
+  categories,
+  classifieds,
+  classifiedCategories,
+  businesses,
+  businessCategories,
+  reviews,
+  provinces,
+  users,
+  userPreferences
+} });
+import { eq, desc, and, sql, ilike, gte, or } from 'drizzle-orm';
+import { handleStorageError, convertToStringArray, slugify } from '../lib/helpers/dominican';
+
+// Typed interfaces for user-generated content
+export interface CreateUserClassifiedData {
+  title: string;
+  description: string;
+  contactInfo: string;
+  categoryId: number;
+  provinceId: number;
+  price?: number;
+  images?: string[];
+  userId: string;
+}
+
+export interface CreateUserReviewData {
+  businessId: number;
+  reviewerName?: string;
+  content: string;
+  rating: number;
+  title: string;
+  images?: string[];
+  userId: string;
+}
+
+export interface UserPreferencesData {
+  userId: string;
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  preferredCategories: string[];
+  preferredProvinces: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UpdateUserPreferencesData {
+  emailNotifications?: boolean;
+  smsNotifications?: boolean;
+  preferredCategories?: string[];
+  preferredProvinces?: string[];
+}
+
+export interface UserReviewWithBusiness extends Review {
+  businessName: string;
+}
+
+// Storage interface definition
+export interface IStorage {
+  // User management
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+
+  // Articles and news
+  getArticles(limit?: number, offset?: number, categorySlug?: string): Promise<ArticleWithRelations[]>;
+  getFeaturedArticles(limit?: number): Promise<ArticleWithRelations[]>;
+  getBreakingNews(limit?: number): Promise<ArticleWithRelations[]>;
+  getArticleBySlug(slug: string): Promise<ArticleWithRelations | undefined>;
+  getArticleById(id: number): Promise<ArticleWithRelations | undefined>;
+  getRelatedArticles(articleId: number, categoryId: number, limit?: number): Promise<ArticleWithRelations[]>;
+  incrementArticleViews(id: number): Promise<void>;
+  incrementArticleLikes(id: number): Promise<void>;
+  createArticle(article: InsertArticle): Promise<Article>;
+
+  // Categories
+  getCategories(): Promise<Category[]>;
+  getCategoryBySlug(slug: string): Promise<Category | undefined>;
+
+  // Classifieds
+  getClassifieds(limit?: number, offset?: number, categorySlug?: string, provinceId?: number): Promise<ClassifiedWithRelations[]>;
+  getClassifiedById(id: number): Promise<ClassifiedWithRelations | undefined>;
+  getActiveClassifieds(limit?: number): Promise<ClassifiedWithRelations[]>;
+  createClassified(classified: InsertClassified): Promise<Classified>;
+  getClassifiedCategories(): Promise<ClassifiedCategory[]>;
+
+  // Businesses
+  getBusinesses(limit?: number, offset?: number, categorySlug?: string, provinceId?: number): Promise<BusinessWithRelations[]>;
+  getBusinessBySlug(slug: string): Promise<BusinessWithRelations | undefined>;
+  getBusinessById(id: number): Promise<BusinessWithRelations | undefined>;
+  createBusiness(business: InsertBusiness): Promise<Business>;
+  getBusinessCategories(): Promise<BusinessCategory[]>;
+
+  // Reviews
+  getReviewsByBusiness(businessId: number, limit?: number): Promise<ReviewWithRelations[]>;
+  getReviewById(id: number): Promise<Review | undefined>;
+  createReview(review: InsertReview): Promise<Review>;
+  getApprovedReviews(businessId: number): Promise<Review[]>;
+
+  // Trending and provinces
+  getTrendingArticles(limit?: number): Promise<ArticleWithRelations[]>;
+  getProvinces(): Promise<Province[]>;
+
+  // User-generated content
+  createUserClassified(classified: CreateUserClassifiedData): Promise<Classified>;
+  createUserReview(review: CreateUserReviewData): Promise<Review>;
+  getUserClassifieds(userId: string): Promise<ClassifiedWithRelations[]>;
+  getUserReviews(userId: string): Promise<UserReviewWithBusiness[]>;
+  deleteClassified(id: number): Promise<void>;
+  deleteReview(id: number): Promise<void>;
+
+  // User preferences
+  getUserPreferences(userId: string): Promise<UserPreferencesData | undefined>;
+  updateUserPreferences(userId: string, preferences: UpdateUserPreferencesData): Promise<UserPreferencesData>;
+
+  // Business lookup
+  getBusinessByName(name: string): Promise<Business | undefined>;
+  searchBusinesses(query: string): Promise<Business[]>;
+}
+
+export class DatabaseStorage implements IStorage {
+  private db: any = null;
+  private pool: any = null;
+
+  constructor() {
+    // Lazy initialization - don't create connection until needed
+  }
+
+  private getDb() {
+    if (!this.db) {
+      const { drizzle } = require('drizzle-orm/node-postgres');
+      const { Pool } = require('pg');
+      this.pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+      });
+      this.db = drizzle(this.pool, { schema: {
+        articles,
+        adminUsers,
+        categories,
+        classifieds,
+        classifiedCategories,
+        businesses,
+        businessCategories,
+        reviews,
+        provinces,
+        users,
+        userPreferences
+      } });
+    }
+    return this.db;
+  }
+
+  private getPool() {
+    if (!this.pool) {
+      this.getDb(); // Initialize both db and pool
+    }
+    return this.pool;
+  }
+
+  // =================================================================================
+  // User Methods
+  // =================================================================================
+
+  async getUser(id: string): Promise<User | undefined> {
+    try {
+      return await this.getDb().query.users.findFirst({ where: eq(users.id, id) });
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `User with id ${id} not found`, error);
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      return await this.getDb().query.users.findFirst({ where: eq(users.email, email) });
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `User with email ${email} not found`, error);
+    }
+  }
+
+  async upsertUser(user: UpsertUser): Promise<User> {
+    try {
+      const [result] = await this.getDb().insert(users).values(user).onConflictDoUpdate({ target: users.id, set: user }).returning();
+      if (!result) {
+        throw new Error('Upsert operation failed to return user.');
+      }
+      return result;
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to upsert user', error);
+    }
+  }
+
+  // =================================================================================
+  // Articles and News Methods
+  // =================================================================================
+
+  async getArticles(limit = 10, offset = 0, categorySlug?: string): Promise<ArticleWithRelations[]> {
+    try {
+      // Simplified query for now - get basic article data
+      let query = `
+        SELECT 
+          a.id, a.title, a.slug, a.excerpt, a.content, 
+          a.featured_image, a.video_url, a.is_breaking, a.is_featured,
+          a.published, a.published_at, a.author_id, a.category_id, 
+          a.views, a.likes, a.created_at, a.updated_at,
+          c.name as category_name, c.slug as category_slug,
+          au.name as author_name
+        FROM articles a
+        LEFT JOIN categories c ON a.category_id = c.id
+        LEFT JOIN admin_users au ON a.author_id = au.id
+        WHERE a.published = true
+      `;
+
+      const params = [];
+      
+      if (categorySlug) {
+        query += ` AND c.slug = $${params.length + 1}`;
+        params.push(categorySlug);
+      }
+      
+      query += ` ORDER BY a.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      params.push(limit, offset);
+
+      // Use raw SQL with pg pool
+      const result = await this.getPool().query(query, params);
+      
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        excerpt: row.excerpt,
+        content: row.content,
+        featuredImage: row.featured_image,
+        videoUrl: row.video_url,
+        isBreaking: row.is_breaking,
+        isFeatured: row.is_featured,
+        published: row.published,
+        publishedAt: row.published_at,
+        authorId: row.author_id,
+        categoryId: row.category_id,
+        views: row.views,
+        likes: row.likes,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        category: row.category_name ? {
+          name: row.category_name,
+          slug: row.category_slug,
+        } : undefined,
+        authorName: row.author_name,
+      }));
+      
+    } catch (error) {
+      console.error('Storage error in getArticles:', error);
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch articles', error);
+    }
+  }
+
+  async getFeaturedArticles(limit = 5): Promise<ArticleWithRelations[]> {
+    try {
+      return await this.getDb()
+        .select({
+          id: articles.id,
+          title: articles.title,
+          slug: articles.slug,
+          excerpt: articles.excerpt,
+          content: articles.content,
+          featuredImage: articles.featuredImage,
+          videoUrl: articles.videoUrl,
+          isBreaking: articles.isBreaking,
+          isFeatured: articles.isFeatured,
+          published: articles.published,
+          publishedAt: articles.publishedAt,
+          authorId: articles.authorId,
+          categoryId: articles.categoryId,
+          categoryIds: articles.categoryIds,
+          provinceId: articles.provinceId,
+          status: articles.status,
+          scheduledFor: articles.scheduledFor,
+          images: articles.images,
+          videos: articles.videos,
+          likes: articles.likes,
+          comments: articles.comments,
+          views: articles.views,
+          createdAt: articles.createdAt,
+          updatedAt: articles.updatedAt,
+          category: {
+            id: categories.id,
+            name: categories.name,
+            slug: categories.slug,
+            icon: categories.icon,
+            description: categories.description,
+            createdAt: categories.createdAt,
+          },
+          province: {
+            id: provinces.id,
+            name: provinces.name,
+            code: provinces.code,
+          },
+          authorName: adminUsers.first_name,
+        })
+        .from(articles)
+        .leftJoin(categories, eq(articles.categoryId, categories.id))
+        .leftJoin(provinces, eq(articles.provinceId, provinces.id))
+        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
+        .where(and(eq(articles.isFeatured, true), eq(articles.published, true)))
+        .orderBy(desc(articles.publishedAt))
+        .limit(limit);
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch featured articles', error);
+    }
+  }
+
+  async getBreakingNews(limit = 5): Promise<ArticleWithRelations[]> {
+    try {
+      return await this.getDb()
+        .select({
+          id: articles.id,
+          title: articles.title,
+          slug: articles.slug,
+          excerpt: articles.excerpt,
+          content: articles.content,
+          featuredImage: articles.featuredImage,
+          videoUrl: articles.videoUrl,
+          isBreaking: articles.isBreaking,
+          isFeatured: articles.isFeatured,
+          published: articles.published,
+          publishedAt: articles.publishedAt,
+          authorId: articles.authorId,
+          categoryId: articles.categoryId,
+          categoryIds: articles.categoryIds,
+          provinceId: articles.provinceId,
+          status: articles.status,
+          scheduledFor: articles.scheduledFor,
+          images: articles.images,
+          videos: articles.videos,
+          likes: articles.likes,
+          comments: articles.comments,
+          views: articles.views,
+          createdAt: articles.createdAt,
+          updatedAt: articles.updatedAt,
+          category: {
+            id: categories.id,
+            name: categories.name,
+            slug: categories.slug,
+            icon: categories.icon,
+            description: categories.description,
+            createdAt: categories.createdAt,
+          },
+          province: {
+            id: provinces.id,
+            name: provinces.name,
+            code: provinces.code,
+          },
+          authorName: adminUsers.first_name,
+        })
+        .from(articles)
+        .leftJoin(categories, eq(articles.categoryId, categories.id))
+        .leftJoin(provinces, eq(articles.provinceId, provinces.id))
+        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
+        .where(and(eq(articles.isBreaking, true), eq(articles.published, true)))
+        .orderBy(desc(articles.publishedAt))
+        .limit(limit);
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch breaking news', error);
+    }
+  }
+
+  async getArticleBySlug(slug: string): Promise<ArticleWithRelations | undefined> {
+    try {
+      const result = await this.getPool().query(`
+        SELECT 
+          a.id, a.title, a.slug, a.excerpt, a.content, 
+          a.featured_image, a.video_url, a.is_breaking, a.is_featured,
+          a.published, a.published_at, a.author_id, a.category_id, 
+          a.views, a.likes, a.created_at, a.updated_at,
+          c.name as category_name, c.slug as category_slug,
+          au.name as author_name
+        FROM articles a
+        LEFT JOIN categories c ON a.category_id = c.id
+        LEFT JOIN admin_users au ON a.author_id = au.id
+        WHERE a.slug = $1 AND a.published = true
+        LIMIT 1
+      `, [slug]);
+      
+      if (result.rows.length === 0) {
+        return undefined;
+      }
+      
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        excerpt: row.excerpt,
+        content: row.content,
+        featuredImage: row.featured_image,
+        videoUrl: row.video_url,
+        isBreaking: row.is_breaking,
+        isFeatured: row.is_featured,
+        published: row.published,
+        publishedAt: row.published_at,
+        authorId: row.author_id,
+        categoryId: row.category_id,
+        views: row.views,
+        likes: row.likes,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        category: row.category_name ? {
+          name: row.category_name,
+          slug: row.category_slug,
+        } : undefined,
+        authorName: row.author_name,
+      };
+    } catch (error) {
+      console.error('Storage error in getArticleBySlug:', error);
+      return handleStorageError('NOT_FOUND', `Article with slug ${slug} not found`, error);
+    }
+  }
+
+  async getArticleById(id: number): Promise<ArticleWithRelations | undefined> {
+    try {
+      const result = await this.getDb()
+        .select({
+          id: articles.id,
+          title: articles.title,
+          slug: articles.slug,
+          excerpt: articles.excerpt,
+          content: articles.content,
+          featuredImage: articles.featuredImage,
+          videoUrl: articles.videoUrl,
+          isBreaking: articles.isBreaking,
+          isFeatured: articles.isFeatured,
+          published: articles.published,
+          publishedAt: articles.publishedAt,
+          authorId: articles.authorId,
+          categoryId: articles.categoryId,
+          categoryIds: articles.categoryIds,
+          provinceId: articles.provinceId,
+          status: articles.status,
+          scheduledFor: articles.scheduledFor,
+          images: articles.images,
+          videos: articles.videos,
+          likes: articles.likes,
+          comments: articles.comments,
+          views: articles.views,
+          createdAt: articles.createdAt,
+          updatedAt: articles.updatedAt,
+          category: {
+            id: categories.id,
+            name: categories.name,
+            slug: categories.slug,
+            icon: categories.icon,
+            description: categories.description,
+            createdAt: categories.createdAt,
+          },
+          province: {
+            id: provinces.id,
+            name: provinces.name,
+            code: provinces.code,
+          },
+          authorName: adminUsers.first_name,
+        })
+        .from(articles)
+        .leftJoin(categories, eq(articles.categoryId, categories.id))
+        .leftJoin(provinces, eq(articles.provinceId, provinces.id))
+        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
+        .where(eq(articles.id, id))
+        .limit(1);
+      return result[0] || undefined;
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `Article with id ${id} not found`, error);
+    }
+  }
+
+  async getRelatedArticles(articleId: number, categoryId: number, limit = 5): Promise<ArticleWithRelations[]> {
+    try {
+      const result = await this.getDb()
+        .select({
+          id: articles.id,
+          title: articles.title,
+          slug: articles.slug,
+          excerpt: articles.excerpt,
+          content: articles.content,
+          featuredImage: articles.featuredImage,
+          videoUrl: articles.videoUrl,
+          isBreaking: articles.isBreaking,
+          isFeatured: articles.isFeatured,
+          published: articles.published,
+          publishedAt: articles.publishedAt,
+          authorId: articles.authorId,
+          categoryId: articles.categoryId,
+          categoryIds: articles.categoryIds,
+          provinceId: articles.provinceId,
+          status: articles.status,
+          scheduledFor: articles.scheduledFor,
+          images: articles.images,
+          videos: articles.videos,
+          likes: articles.likes,
+          comments: articles.comments,
+          views: articles.views,
+          createdAt: articles.createdAt,
+          updatedAt: articles.updatedAt,
+          // Relations
+          category: {
+            id: categories.id,
+            name: categories.name,
+            slug: categories.slug,
+            icon: categories.icon,
+            description: categories.description,
+            createdAt: categories.createdAt,
+          },
+          province: {
+            id: provinces.id,
+            name: provinces.name,
+            code: provinces.code,
+          },
+          authorName: adminUsers.first_name,
+        })
+        .from(articles)
+        .leftJoin(categories, eq(articles.categoryId, categories.id))
+        .leftJoin(provinces, eq(articles.provinceId, provinces.id))
+        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
+        .where(and(eq(articles.categoryId, categoryId), sql`${articles.id} != ${articleId}`))
+        .orderBy(desc(articles.publishedAt))
+        .limit(limit);
+
+      return result;
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch related articles', error);
+    }
+  }
+
+  async incrementArticleViews(id: number): Promise<void> {
+    try {
+      await this.getPool().query('UPDATE articles SET views = COALESCE(views, 0) + 1 WHERE id = $1', [id]);
+    } catch (error) {
+      console.error('Storage error in incrementArticleViews:', error);
+      handleStorageError('DATABASE_ERROR', `Failed to increment views for article ${id}`, error);
+    }
+  }
+
+  async incrementArticleLikes(id: number): Promise<void> {
+    try {
+      await this.getDb().update(articles).set({ likes: sql`${articles.likes} + 1` }).where(eq(articles.id, id));
+    } catch (error) {
+      handleStorageError('DATABASE_ERROR', `Failed to increment likes for article ${id}`, error);
+    }
+  }
+
+  async createArticle(article: InsertArticle): Promise<Article> {
+    try {
+      const articleToInsert = {
+        ...article,
+        slug: slugify(article.title),
+        images: convertToStringArray(article.images),
+        videos: convertToStringArray(article.videos),
+      };
+
+      const [result] = await this.getDb().insert(articles).values(articleToInsert).returning();
+      if (!result) {
+        throw new Error('Article creation failed.');
+      }
+      return result;
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to create article', error);
+    }
+  }
+
+  // =================================================================================
+  // Category Methods
+  // =================================================================================
+
+  async getCategories(): Promise<Category[]> {
+    try {
+      const result = await this.getPool().query(`
+        SELECT id, name, slug, description, icon, color, created_at
+        FROM categories 
+        ORDER BY name ASC
+      `);
+      
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description,
+        icon: row.icon,
+        color: row.color,
+        created_at: row.created_at,
+      }));
+    } catch (error) {
+      console.error('Storage error in getCategories:', error);
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch categories', error);
+    }
+  }
+
+  async getCategoryBySlug(slug: string): Promise<Category | undefined> {
+    try {
+      return await this.db.query.categories.findFirst({ where: eq(categories.slug, slug) });
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `Category with slug ${slug} not found`, error);
+    }
+  }
+
+  // =================================================================================
+  // Classifieds Methods
+  // =================================================================================
+
+  async getClassifieds(limit = 20, offset = 0, categorySlug?: string, provinceId?: number): Promise<ClassifiedWithRelations[]> {
+    try {
+      const whereClauses = [];
+      if (categorySlug) {
+        const category = await this.getClassifiedCategoryBySlug(categorySlug);
+        if(category) {
+          whereClauses.push(eq(classifieds.categoryId, category.id));
+        }
+      }
+      if (provinceId) {
+        whereClauses.push(eq(classifieds.provinceId, provinceId));
+      }
+
+      return await this.db.query.classifieds.findMany({
+        where: whereClauses.length > 0 ? and(...whereClauses) : undefined,
+        with: { category: true, province: true },
+        orderBy: [desc(classifieds.createdAt)],
+        limit,
+        offset,
+      });
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch classifieds', error);
+    }
+  }
+
+  async getClassifiedById(id: number): Promise<ClassifiedWithRelations | undefined> {
+    try {
+      return await this.db.query.classifieds.findFirst({
+        where: eq(classifieds.id, id),
+        with: { category: true, province: true },
+      });
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `Classified with id ${id} not found`, error);
+    }
+  }
+
+  async getActiveClassifieds(limit = 10): Promise<ClassifiedWithRelations[]> {
+    try {
+      return await this.db.query.classifieds.findMany({
+        where: and(eq(classifieds.status, 'active'), gte(classifieds.expiresAt, new Date())),
+        with: { category: true, province: true },
+        orderBy: [desc(classifieds.createdAt)],
+        limit,
+      });
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch active classifieds', error);
+    }
+  }
+
+  async createClassified(classified: InsertClassified): Promise<Classified> {
+    try {
+      const [result] = await this.getDb().insert(classifieds).values([classified as any]).returning();
+      if (!result) {
+        throw new Error('Classified creation failed.');
+      }
+      return result;
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to create classified', error);
+    }
+  }
+
+  async getClassifiedCategories(): Promise<ClassifiedCategory[]> {
+    try {
+      return await this.db.query.classifiedCategories.findMany({ orderBy: [desc(classifiedCategories.name)] });
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch classified categories', error);
+    }
+  }
+
+  private async getClassifiedCategoryBySlug(slug: string): Promise<ClassifiedCategory | undefined> {
+    try {
+      return await this.db.query.classifiedCategories.findFirst({ where: eq(classifiedCategories.slug, slug) });
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `Classified category with slug ${slug} not found`, error);
+    }
+  }
+
+  // =================================================================================
+  // Businesses and Reviews Methods
+  // =================================================================================
+
+  async getBusinesses(limit = 20, offset = 0, categorySlug?: string, provinceId?: number): Promise<BusinessWithRelations[]> {
+    try {
+      const whereClauses = [];
+      if (categorySlug) {
+        const category = await this.getBusinessCategoryBySlug(categorySlug);
+        if(category) {
+          whereClauses.push(eq(businesses.categoryId, category.id));
+        }
+      }
+      if (provinceId) {
+        whereClauses.push(eq(businesses.provinceId, provinceId));
+      }
+
+      return await this.db.query.businesses.findMany({
+        where: whereClauses.length > 0 ? and(...whereClauses) : undefined,
+        with: { category: true, province: true, reviews: true },
+        orderBy: [desc(businesses.createdAt)],
+        limit,
+        offset,
+      });
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch businesses', error);
+    }
+  }
+
+  async getBusinessBySlug(slug: string): Promise<BusinessWithRelations | undefined> {
+    try {
+      return await this.db.query.businesses.findFirst({
+        where: eq(businesses.slug, slug),
+        with: { category: true, province: true, reviews: true },
+      });
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `Business with slug ${slug} not found`, error);
+    }
+  }
+
+  async getBusinessById(id: number): Promise<BusinessWithRelations | undefined> {
+    try {
+      return await this.db.query.businesses.findFirst({
+        where: eq(businesses.id, id),
+        with: { category: true, province: true, reviews: true },
+      });
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `Business with id ${id} not found`, error);
+    }
+  }
+
+  async createBusiness(business: InsertBusiness): Promise<Business> {
+    try {
+      const [result] = await this.getDb().insert(businesses).values([business as any]).returning();
+      if (!result) {
+        throw new Error('Business creation failed.');
+      }
+      return result;
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to create business', error);
+    }
+  }
+
+  async getBusinessCategories(): Promise<BusinessCategory[]> {
+    try {
+      return await this.db.query.businessCategories.findMany({ orderBy: [desc(businessCategories.name)] });
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch business categories', error);
+    }
+  }
+
+  private async getBusinessCategoryBySlug(slug: string): Promise<BusinessCategory | undefined> {
+    try {
+      return await this.db.query.businessCategories.findFirst({ where: eq(businessCategories.slug, slug) });
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `Business category with slug ${slug} not found`, error);
+    }
+  }
+
+  // =================================================================================
+  // Reviews Methods
+  // =================================================================================
+
+  async getReviewsByBusiness(businessId: number, limit = 10): Promise<ReviewWithRelations[]> {
+    try {
+      return await this.db.query.reviews.findMany({
+        where: eq(reviews.businessId, businessId),
+        with: { business: true },
+        orderBy: [desc(reviews.createdAt)],
+        limit,
+      });
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch reviews', error);
+    }
+  }
+
+  async getReviewById(id: number): Promise<Review | undefined> {
+    try {
+      return await this.db.query.reviews.findFirst({
+        where: eq(reviews.id, id),
+      });
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `Review with id ${id} not found`, error);
+    }
+  }
+
+  async createReview(review: InsertReview): Promise<Review> {
+    try {
+      const [result] = await this.getDb().insert(reviews).values([review as any]).returning();
+      if (!result) {
+        throw new Error('Review creation failed.');
+      }
+      return result;
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to create review', error);
+    }
+  }
+
+  async getApprovedReviews(businessId: number): Promise<Review[]> {
+    try {
+      return await this.db.query.reviews.findMany({
+        where: and(eq(reviews.businessId, businessId), eq(reviews.approved, true)),
+        orderBy: [desc(reviews.createdAt)],
+      });
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch approved reviews', error);
+    }
+  }
+
+  // =================================================================================
+  // Trending Methods
+  // =================================================================================
+
+  async getTrendingArticles(limit = 5): Promise<ArticleWithRelations[]> {
+    try {
+      const result = await this.getDb()
+        .select({
+          id: articles.id,
+          title: articles.title,
+          slug: articles.slug,
+          excerpt: articles.excerpt,
+          content: articles.content,
+          featuredImage: articles.featuredImage,
+          videoUrl: articles.videoUrl,
+          isBreaking: articles.isBreaking,
+          isFeatured: articles.isFeatured,
+          published: articles.published,
+          publishedAt: articles.publishedAt,
+          authorId: articles.authorId,
+          categoryId: articles.categoryId,
+          categoryIds: articles.categoryIds,
+          provinceId: articles.provinceId,
+          status: articles.status,
+          scheduledFor: articles.scheduledFor,
+          images: articles.images,
+          videos: articles.videos,
+          likes: articles.likes,
+          comments: articles.comments,
+          views: articles.views,
+          createdAt: articles.createdAt,
+          updatedAt: articles.updatedAt,
+          // Relations
+          category: {
+            id: categories.id,
+            name: categories.name,
+            slug: categories.slug,
+            icon: categories.icon,
+            description: categories.description,
+            createdAt: categories.createdAt,
+          },
+          province: {
+            id: provinces.id,
+            name: provinces.name,
+            code: provinces.code,
+          },
+          authorName: adminUsers.first_name,
+        })
+        .from(articles)
+        .leftJoin(categories, eq(articles.categoryId, categories.id))
+        .leftJoin(provinces, eq(articles.provinceId, provinces.id))
+        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
+        .where(gte(articles.publishedAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)))
+        .orderBy(desc(articles.views))
+        .limit(limit);
+
+      return result;
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch trending articles', error);
+    }
+  }
+
+  // =================================================================================
+  // Provinces Methods
+  // =================================================================================
+
+  async getProvinces(): Promise<Province[]> {
+    try {
+      return await this.db.query.provinces.findMany({ orderBy: [desc(provinces.name)] });
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch provinces', error);
+    }
+  }
+
+  // =================================================================================
+  // User Generated Content Methods
+  // =================================================================================
+
+  async createUserClassified(classifiedData: CreateUserClassifiedData): Promise<Classified> {
+    return this.createClassified(classifiedData as unknown as InsertClassified);
+  }
+
+  async createUserReview(reviewData: CreateUserReviewData): Promise<Review> {
+    return this.createReview(reviewData as InsertReview);
+  }
+
+  async getUserClassifieds(userId: string): Promise<ClassifiedWithRelations[]> {
+    try {
+      return await this.db.query.classifieds.findMany({
+        where: eq(classifieds.userId, userId),
+        with: { category: true, province: true },
+        orderBy: [desc(classifieds.createdAt)],
+      });
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch user classifieds', error);
+    }
+  }
+
+  async getUserReviews(userId: string): Promise<UserReviewWithBusiness[]> {
+    try {
+      const userReviews = await this.db.query.reviews.findMany({
+        where: eq(reviews.userId, userId),
+        with: { business: true },
+        orderBy: [desc(reviews.createdAt)],
+      });
+      return userReviews.map((r: any) => ({ 
+        ...r, 
+        businessName: (r as any).business?.name || 'Unknown Business',
+      }));
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Failed to fetch user reviews', error);
+    }
+  }
+
+  async deleteClassified(id: number): Promise<void> {
+    try {
+      await this.getDb().delete(classifieds).where(eq(classifieds.id, id));
+    } catch (error) {
+      handleStorageError('DATABASE_ERROR', `Failed to delete classified with id ${id}`, error);
+    }
+  }
+
+  async deleteReview(id: number): Promise<void> {
+    try {
+      await this.getDb().delete(reviews).where(eq(reviews.id, id));
+    } catch (error) {
+      handleStorageError('DATABASE_ERROR', `Failed to delete review with id ${id}`, error);
+    }
+  }
+
+  // =================================================================================
+  // User Preferences Methods
+  // =================================================================================
+
+  async getUserPreferences(userId: string): Promise<UserPreferencesData | undefined> {
+    try {
+      const result = await this.getDb().query.userPreferences.findFirst({
+        where: eq(userPreferences.userId, userId),
+      });
+      return result as UserPreferencesData | undefined;
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `Preferences for user ${userId} not found`, error);
+    }
+  }
+
+  async updateUserPreferences(userId: string, preferences: UpdateUserPreferencesData): Promise<UserPreferencesData> {
+    try {
+      const [result] = await this.db.update(userPreferences).set(preferences as any).where(eq(userPreferences.userId, userId)).returning();
+      if(!result) {
+        throw new Error('Failed to update preferences');
+      }
+      return result as unknown as UserPreferencesData;
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', `Failed to update preferences for user ${userId}`, error);
+    }
+  }
+
+  // =================================================================================
+  // Business Lookup Methods
+  // =================================================================================
+
+  async getBusinessByName(name: string): Promise<Business | undefined> {
+    try {
+      return await this.db.query.businesses.findFirst({ where: ilike(businesses.name, `%${name}%`) });
+    } catch (error) {
+      return handleStorageError('NOT_FOUND', `Business with name ${name} not found`, error);
+    }
+  }
+
+  async searchBusinesses(query: string): Promise<Business[]> {
+    try {
+      return await this.db.query.businesses.findMany({ 
+        where: or(ilike(businesses.name, `%${query}%`), ilike(businesses.description, `%${query}%`))
+      });
+    } catch (error) {
+      return handleStorageError('DATABASE_ERROR', 'Error searching businesses', error);
+    }
+  }
+}
+
+// Export storage instance
+export const storage = new DatabaseStorage();

@@ -47,8 +47,7 @@
     "importHelpers": true
   },
   "include": [
-    "src/**/*",
-    "scripts/**/*.ts"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
