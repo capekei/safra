@@ -4,18 +4,18 @@ A modern, mobile-first news and marketplace platform built for the Dominican Rep
 
 ## 🏗️ Architecture
 
-**Monorepo Structure:**
-- `client/` - React frontend with Vite
-- `server/` - Express.js backend with TypeScript
-- `shared/` - Shared types, schemas, and DTOs
-- `packages/` - Additional packages
+**Single Repository Structure:**
+- `src/client/` - React frontend with Vite
+- `src/server/` - Express.js backend with TypeScript  
+- `src/shared/` - Shared types, schemas, and DTOs
 
 **Technology Stack:**
-- **Frontend:** React 18, Vite, Tailwind CSS, React Query
-- **Backend:** Express.js, TypeScript, Drizzle ORM, Supabase
-- **Database:** PostgreSQL (Neon)
-- **Authentication:** Supabase Auth
-- **Monorepo:** pnpm workspaces, Turborepo, Changesets
+- **Frontend:** React 18, Vite, Tailwind CSS, React Query, Radix UI
+- **Backend:** Express.js, TypeScript, Drizzle ORM  
+- **Database:** PostgreSQL (Render)
+- **Authentication:** JWT with bcrypt
+- **Deployment:** Render (Single Service)
+- **Runtime:** tsx transpilation for server
 
 ## 🚀 Quick Start
 

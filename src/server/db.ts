@@ -1,10 +1,13 @@
 // Load environment variables (required for DATABASE_URL at module load time)
 import * as dotenv from 'dotenv';
-dotenv.config();
+import { resolve } from 'path';
+
+// Load from root directory .env file
+dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import * as schema from "../shared/dist/schema.js";
+import * as schema from "../shared/schema.js";
 
 if (!process.env.DATABASE_URL) {
   if (process.env.NODE_ENV === 'development') {

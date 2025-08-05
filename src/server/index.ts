@@ -5,7 +5,10 @@ if (process.env.NODE_ENV === 'development' && process.env.DISABLE_SSL_VERIFY ===
 }
 
 import * as dotenv from 'dotenv';
-dotenv.config();
+import { resolve } from 'path';
+
+// Load from root directory .env file
+dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";

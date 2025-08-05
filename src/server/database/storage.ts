@@ -32,27 +32,9 @@ import {
 } from "../../shared/index.js";
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-// dotenv configured in main index.ts entry point
-
-// Create database connection directly in storage
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
-const db = drizzle(pool, { schema: {
-  articles,
-  adminUsers,
-  categories,
-  classifieds,
-  classifiedCategories,
-  businesses,
-  businessCategories,
-  reviews,
-  provinces,
-  users,
-  userPreferences
-} });
+import { db, pool } from '../db.js';
 import { eq, desc, and, sql, ilike, gte, or } from 'drizzle-orm';
+// dotenv configured in main index.ts entry point
 import { handleStorageError, convertToStringArray, slugify } from '../lib/helpers/dominican';
 
 // Typed interfaces for user-generated content
@@ -171,32 +153,16 @@ export class DatabaseStorage implements IStorage {
 
   private getDb() {
     if (!this.db) {
-      const { drizzle } = require('drizzle-orm/node-postgres');
-      const { Pool } = require('pg');
-      this.pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
-      });
-      this.db = drizzle(this.pool, { schema: {
-        articles,
-        adminUsers,
-        categories,
-        classifieds,
-        classifiedCategories,
-        businesses,
-        businessCategories,
-        reviews,
-        provinces,
-        users,
-        userPreferences
-      } });
+      // Use the imported database connection from db.ts
+      this.db = db;
     }
     return this.db;
   }
 
   private getPool() {
     if (!this.pool) {
-      this.getDb(); // Initialize both db and pool
+      // Use the imported pool connection from db.ts
+      this.pool = pool;
     }
     return this.pool;
   }
@@ -616,7 +582,7 @@ export class DatabaseStorage implements IStorage {
   async getCategories(): Promise<Category[]> {
     try {
       const result = await this.getPool().query(`
-        SELECT id, name, slug, description, icon, color, created_at
+        SELECT id, name, slug, description, icon, created_at
         FROM categories 
         ORDER BY name ASC
       `);
@@ -860,57 +826,48 @@ export class DatabaseStorage implements IStorage {
 
   async getTrendingArticles(limit = 5): Promise<ArticleWithRelations[]> {
     try {
-      const result = await this.getDb()
-        .select({
-          id: articles.id,
-          title: articles.title,
-          slug: articles.slug,
-          excerpt: articles.excerpt,
-          content: articles.content,
-          featuredImage: articles.featuredImage,
-          videoUrl: articles.videoUrl,
-          isBreaking: articles.isBreaking,
-          isFeatured: articles.isFeatured,
-          published: articles.published,
-          publishedAt: articles.publishedAt,
-          authorId: articles.authorId,
-          categoryId: articles.categoryId,
-          categoryIds: articles.categoryIds,
-          provinceId: articles.provinceId,
-          status: articles.status,
-          scheduledFor: articles.scheduledFor,
-          images: articles.images,
-          videos: articles.videos,
-          likes: articles.likes,
-          comments: articles.comments,
-          views: articles.views,
-          createdAt: articles.createdAt,
-          updatedAt: articles.updatedAt,
-          // Relations
-          category: {
-            id: categories.id,
-            name: categories.name,
-            slug: categories.slug,
-            icon: categories.icon,
-            description: categories.description,
-            createdAt: categories.createdAt,
-          },
-          province: {
-            id: provinces.id,
-            name: provinces.name,
-            code: provinces.code,
-          },
-          authorName: adminUsers.first_name,
-        })
-        .from(articles)
-        .leftJoin(categories, eq(articles.categoryId, categories.id))
-        .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
-        .where(gte(articles.publishedAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)))
-        .orderBy(desc(articles.views))
-        .limit(limit);
-
-      return result;
+      // Use raw SQL query similar to getArticles for consistency and reliability
+      const query = `
+        SELECT 
+          a.id, a.title, a.slug, a.excerpt, a.content, 
+          a.featured_image, a.video_url, a.is_breaking, a.is_featured,
+          a.published, a.published_at, a.author_id, a.category_id, 
+          a.views, a.likes, a.created_at, a.updated_at,
+          c.name as category_name, c.slug as category_slug
+        FROM articles a
+        LEFT JOIN categories c ON a.category_id = c.id
+        WHERE a.published = true 
+          AND a.published_at >= NOW() - INTERVAL '30 days'
+          AND a.views IS NOT NULL
+        ORDER BY a.views DESC 
+        LIMIT $1
+      `;
+      
+      const result = await this.getPool().query(query, [limit]);
+      
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        excerpt: row.excerpt,
+        content: row.content,
+        featuredImage: row.featured_image,
+        videoUrl: row.video_url,
+        isBreaking: row.is_breaking,
+        isFeatured: row.is_featured,
+        published: row.published,
+        publishedAt: row.published_at,
+        authorId: row.author_id,
+        categoryId: row.category_id,
+        views: row.views,
+        likes: row.likes,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        category: {
+          name: row.category_name,
+          slug: row.category_slug
+        }
+      }));
     } catch (error) {
       return handleStorageError('DATABASE_ERROR', 'Failed to fetch trending articles', error);
     }
@@ -922,7 +879,19 @@ export class DatabaseStorage implements IStorage {
 
   async getProvinces(): Promise<Province[]> {
     try {
-      return await this.db.query.provinces.findMany({ orderBy: [desc(provinces.name)] });
+      const result = await this.getPool().query(`
+        SELECT id, name, code
+        FROM provinces 
+        ORDER BY name ASC
+      `);
+      
+      return result.rows.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        code: row.code,
+        slug: row.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        created_at: new Date()
+      }));
     } catch (error) {
       return handleStorageError('DATABASE_ERROR', 'Failed to fetch provinces', error);
     }

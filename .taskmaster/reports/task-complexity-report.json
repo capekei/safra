@@ -1,0 +1,45 @@
+{
+	"meta": {
+		"generatedAt": "2025-08-05T14:32:10.205Z",
+		"tasksAnalyzed": 4,
+		"totalTasks": 8,
+		"analysisCount": 4,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 3,
+			"taskTitle": "Complete Monorepo Restructuring and Architectural Refactor",
+			"complexityScore": 10,
+			"recommendedSubtasks": 8,
+			"expansionPrompt": "Expand the task 'Complete Monorepo Restructuring and Architectural Refactor' into 8 subtasks. The subtasks should follow the logical progression outlined in the task details, starting with critical cleanup, then moving to structural changes for the root, frontend, and backend. Include dedicated subtasks for creating the shared types package, implementing performance/SEO/accessibility optimizations, and configuring the monorepo tooling (Turborepo, Changesets, Storybook). Each subtask should represent a distinct, major phase of the refactor.",
+			"reasoning": "The complexity is 10/10 due to the massive scope, touching every aspect of the monorepo from file structure and architecture to build tooling and performance. It's a foundational epic that redefines the entire project. The 8 recommended subtasks directly map to the 8 major initiatives listed in the task details, providing a clear, phased implementation plan for this large-scale effort."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Full-Stack Technology Upgrade: Migrate to Supabase, Prisma, and Yup",
+			"complexityScore": 9,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Expand the task 'Full-Stack Technology Upgrade: Migrate to Supabase, Prisma, and Yup' into 5 subtasks. Each subtask should correspond to one of the five phases outlined in the task details: 1. Database Migration (Neon to Supabase), 2. ORM Migration (Drizzle to Prisma), 3. Validation Layer Migration (Zod to Yup), 4. Storage Integration (Supabase Storage), and 5. Connection & Environment Optimization. Ensure each subtask has clear dependencies on the preceding ones where applicable.",
+			"reasoning": "The complexity is 9/10 because it involves a full-stack technology migration across the database, ORM, and validation layers. This is a high-risk, high-effort operation with significant architectural impact and data integrity concerns. The 5 recommended subtasks align perfectly with the 5 distinct phases detailed in the task, providing a logical and sequential breakdown of the migration process."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Post-Migration Technology Stack Cleanup",
+			"complexityScore": 6,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Expand the task 'Post-Migration Technology Stack Cleanup' into 5 subtasks. The subtasks should follow the structured cleanup process outlined in the details: 1. Dependency and Security Audit, 2. Package Removal and Consolidation, 3. Dead Code and Orphaned File Elimination, 4. Configuration and Script Streamlining, and 5. Documentation Update and Final Verification. Emphasize that all actions must be cross-referenced with the protected technology stack.",
+			"reasoning": "The complexity is 6/10. While a cleanup task, it requires careful, multi-tool analysis and a methodical approach to avoid breaking the 'protected' stack, making it significantly more complex than a simple refactor. The 5 recommended subtasks directly follow the 5-step process in the task details, breaking the work into logical stages: audit, package cleanup, code cleanup, config cleanup, and documentation."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "SafraReport Modernization: Next.js 14 & Neon Migration",
+			"complexityScore": 9,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Expand the task 'SafraReport Modernization: Next.js 14 & Neon Migration' into 5 subtasks based on the five phases in the description. The subtasks should be: 1. Codebase Preparation and Cleanup, 2. Frontend Migration to Next.js 14 App Router, 3. Database Migration from Supabase to Neon, 4. Refactoring Data Fetching and Business Logic, and 5. Configuring Production Deployment and Health Checks. Ensure dependencies are set correctly for sequential execution.",
+			"reasoning": "The complexity is 9/10 due to the dual migration of both the frontend framework (Vite to Next.js 14 App Router) and the primary database (Supabase to Neon). This involves significant architectural changes, data migration, and re-implementation of core logic. The 5 recommended subtasks align with the 5 well-defined phases in the task description, providing a clear, sequential path for this complex modernization effort."
+		}
+	]
+}

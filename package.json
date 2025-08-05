@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "cd src/server && tsx watch index.ts",
+    "dev:server": "tsx watch src/server/index.ts",
     "dev:client": "cd src/client && vite --port 5173",
     "build": "./scripts/simple-build.sh",
     "build:client": "cd src/client && vite build",
@@ -37,7 +37,10 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "migrate:single-repo": "./scripts/migrate-to-single-repo.sh",
     "migrate:update-imports": "tsx scripts/update-imports.ts",
-    "migrate:consolidate-packages": "node scripts/consolidate-packages.js"
+    "migrate:consolidate-packages": "node scripts/consolidate-packages.js",
+    "health-check": "node scripts/health-check.cjs",
+    "health-check:prod": "NODE_ENV=production node scripts/health-check.cjs",
+    "verify-db": "node scripts/verify-database.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

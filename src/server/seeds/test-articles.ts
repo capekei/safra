@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { articles, categories, adminUsers, users } from '../../shared/dist/schema.js';
+import { articles, categories, adminUsers, users } from '../../shared/schema.js';
 
 async function seedTestData() {
   try {

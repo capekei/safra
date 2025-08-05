@@ -28,6 +28,20 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# AI Tool Configurations (keep out of repo)
+.kiro/
+.clinerules/
+.roo/
+.trae/
+.gemini/
+.windsurf/
+.zed/
+.cursor/
+.bolt/
+.v0/
+.replit/
+.codepen/
 *.swo
 *~
 
