@@ -56,7 +56,7 @@ export function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
-                variant="ghost" 
+                
                 className="text-gray-700 hover:text-primary font-medium flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:bg-primary/5"
               >
                 <span className="text-base">Noticias</span>
@@ -86,7 +86,7 @@ export function Header() {
           
           <Link href="/clasificados">
             <Button 
-              variant="ghost" 
+              
               className={cn(
                 "text-gray-700 hover:text-primary font-medium nav-underline transition-all duration-300",
                 location.startsWith("/clasificados") && "text-primary"
@@ -98,7 +98,7 @@ export function Header() {
           
           <Link href="/resenas">
             <Button 
-              variant="ghost" 
+              
               className={cn(
                 "text-gray-700 hover:text-primary font-medium nav-underline transition-all duration-300",
                 location.startsWith("/resenas") && "text-primary"
@@ -108,9 +108,9 @@ export function Header() {
             </Button>
           </Link>
           
-          <GlassCard variant="button">
+          <GlassCard>
             <Button 
-              variant="ghost" 
+              
               size="sm"
               onClick={toggleLanguage}
               className="text-gray-700 hover:text-primary"
@@ -121,9 +121,9 @@ export function Header() {
           </GlassCard>
 
           <Link href="/cuenta">
-            <GlassCard variant="button" className="group hover:scale-105 transition-all duration-300">
+            <GlassCard className="group hover:scale-105 transition-all duration-300">
               <Button 
-                variant="ghost" 
+                
                 size="sm"
                 className="text-gray-700 hover:text-primary group-hover:bg-primary/5 p-2 rounded-full"
               >
@@ -135,7 +135,7 @@ export function Header() {
 
         {/* Mobile Menu Button */}
         <Button 
-          variant="ghost" 
+          
           size="sm"
           className="mobile-nav md:hidden text-gray-700"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

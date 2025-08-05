@@ -255,7 +255,7 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
         <div className="flex items-center gap-1 border-r pr-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 px-2 gap-1" title="Color de texto">
+              <Button size="sm" className="h-8 px-2 gap-1" title="Color de texto">
                 <Palette className="h-4 w-4" />
                 <div 
                   className="w-4 h-4 rounded border"

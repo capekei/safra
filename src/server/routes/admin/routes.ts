@@ -15,7 +15,7 @@ import {
   adAnalytics
 } from "../../../shared";
 import { and, eq, or, desc, ilike, SQL, sql, gte, lte, count } from "drizzle-orm";
-// import { authenticateSupabase, requireAdmin, AuthRequest } from "../../middleware/auth"; // Temporarily disabled - using Neon/Drizzle stack
+import { authenticateAdmin, requireAdmin, AuthRequest } from "../../middleware/auth";
 import { safeParseInt } from "./utils";
 import { upload, getFileUrl } from "../../upload";
 import { DR_ERRORS, safeInsertData } from "../../lib/helpers/dominican";
@@ -24,7 +24,7 @@ import { logAdminAction } from "../../middleware/admin";
 const router = Router();
 
 // Apply the base authentication middleware to all admin routes
-// router.use(authenticateSupabase as any, requireAdmin as any); // Temporarily disabled - using Neon/Drizzle stack
+router.use(authenticateAdmin as any, requireAdmin as any);
 
 // Articles management
 router.get("/articles", (async (req: any, res: Response) => {

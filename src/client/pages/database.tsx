@@ -337,7 +337,7 @@ export default function AdminDatabase() {
               >
                 Cancelar
               </Button>
-              <Button variant="glass" onClick={runMigrations}>
+              <Button onClick={runMigrations}>
                 Ejecutar Migraciones
               </Button>
             </div>

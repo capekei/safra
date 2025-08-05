@@ -156,7 +156,7 @@ export default function UIShowcase() {
                 Esta es una tarjeta con efecto glass básico.
               </p>
             </GlassCard>
-            <GlassCard variant="hover" className="p-6">
+            <GlassCard className="p-6">
               <h3 className="font-semibold mb-2">Card Hover</h3>
               <p className="text-gray-600 text-sm">
                 Esta tarjeta tiene efectos hover mejorados.

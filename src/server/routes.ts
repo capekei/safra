@@ -7,7 +7,7 @@ const storage = new DatabaseStorage();
 import { z } from "zod";
 import adminRoutes from "./routes/admin/routes";
 
-// import supabaseAuthRoutes from "./middleware/auth"; // Temporarily disabled - using Neon/Drizzle stack
+// Using unified JWT authentication system
 import userRoutes from "./routes/user/routes";
 import { db } from "./db";
 import { articles, categories, classifieds, businesses, classifiedCategories, businessCategories, provinces } from "../shared/index.js";
@@ -17,11 +17,7 @@ import { generateOpenAPISpec } from "./routes/api-docs";
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Mount Supabase auth routes first
-  // app.use("/", supabaseAuthRoutes); // Temporarily disabled - using Neon/Drizzle stack
-  
-  // Auth middleware (this sets up Replit Auth but shouldn't override our routes)
-  // await setupAuth(app);
+  // Modern JWT authentication system
   
   // Mount user routes
   app.use("/api/user", userRoutes);
@@ -56,7 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Database debug error:', error);
       res.status(500).json({ 
         success: false, 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         message: "Database connection failed" 
       });
     }
@@ -81,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Direct articles query error:', error);
       res.status(500).json({ 
         success: false, 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         message: "Direct query failed" 
       });
     }
@@ -118,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Direct article query error:', error);
       res.status(500).json({ 
         success: false, 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         message: "Direct article query failed" 
       });
     }

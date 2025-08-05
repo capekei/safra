@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { db } from '../db';
-import { auditLogs } from '../shared';
+import { auditLogs } from '../../shared';
 import type { AuthRequest } from './auth';
 
 /**

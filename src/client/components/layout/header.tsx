@@ -45,7 +45,7 @@ export function Header() {
           {/* Desktop Auth */}
           <div className="hidden md:flex items-center space-x-4">
             <Link href="/login">
-              <Button variant="ghost" size="sm">
+              <Button size="sm">
                 Iniciar Sesión
               </Button>
             </Link>
@@ -92,7 +92,7 @@ export function Header() {
               })}
               <div className="pt-4 border-t border-gray-200">
                 <Link href="/login">
-                  <Button variant="ghost" className="w-full justify-start" onClick={() => setIsMenuOpen(false)}>
+                  <Button className="w-full justify-start" onClick={() => setIsMenuOpen(false)}>
                     Iniciar Sesión
                   </Button>
                 </Link>

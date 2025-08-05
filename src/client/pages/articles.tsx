@@ -254,17 +254,17 @@ function AdminArticles() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
                           <Link href={`/admin/articles/${article.id}`}>
-                            <Button variant="ghost" size="sm">
+                            <Button size="sm">
                               <Eye className="w-4 h-4" />
                             </Button>
                           </Link>
                           <Link href={`/admin/articles/${article.id}/edit`}>
-                            <Button variant="ghost" size="sm">
+                            <Button size="sm">
                               <Edit className="w-4 h-4" />
                             </Button>
                           </Link>
                           <Button 
-                            variant="ghost" 
+                            
                             size="sm"
                             onClick={() => handleDelete(article.id)}
                             className="text-red-600 hover:text-red-800"

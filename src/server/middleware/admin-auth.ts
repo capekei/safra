@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { db } from '../db';
-import { adminUsers, adminSessions } from '../shared';
+import { adminUsers, adminSessions } from '../../shared';
 import { eq, and } from 'drizzle-orm';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';

@@ -16,7 +16,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
 
   return (
     <Link href={`/articulo/${article.slug}`}>
-      <GlassCard variant="hover" className="cursor-pointer overflow-hidden">
+      <GlassCard className="cursor-pointer overflow-hidden">
         {article.featuredImage && (
           <div className="relative">
             <img 
@@ -31,7 +31,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
         
         <div className="p-5">
           <div className="flex items-center space-x-3 mb-3">
-            <GlassCard variant="pill" className="px-2 py-1 text-xs font-medium text-gray-600">
+            <GlassCard className="px-2 py-1 text-xs font-medium text-gray-600">
               {article.category?.name}
             </GlassCard>
             <span className="text-gray-400 text-xs flex items-center">

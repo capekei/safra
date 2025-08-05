@@ -1,69 +1,92 @@
-import { supabase } from "./supabase";
-
-// A custom hook to create a pre-configured API client
+// Simple API client without Supabase dependency
 export const useApiClient = () => {
   const getAccessToken = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
+    // Get token from localStorage or sessionStorage
+    return localStorage.getItem('access_token') || null;
   };
 
   const callApi = async (method: string, endpoint: string, body?: any) => {
     const token = await getAccessToken();
-    
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
 
-    const headers: HeadersInit = {};
-    
     if (token) {
-      headers.Authorization = `Bearer ${token}`;
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const config: RequestInit = {
-      method: method.toUpperCase(),
+      method,
       headers,
     };
 
-    if (body) {
-      if (body instanceof FormData) {
-        config.body = body;
-      } else {
-        headers["Content-Type"] = "application/json";
-        config.body = JSON.stringify(body);
-      }
+    if (body && method !== 'GET') {
+      config.body = JSON.stringify(body);
     }
 
-    const response = await fetch(`${baseUrl}${endpoint}`, config);
-
+    const response = await fetch(`/api${endpoint}`, config);
+    
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(`API call failed: ${response.statusText}`);
     }
 
     return response.json();
   };
 
-  const raw = async (endpoint: string): Promise<Response> => {
-    const accessToken = await getAccessToken();
-    
-    const headers: HeadersInit = {};
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-    
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || '/api'}${endpoint}`, {
-      headers,
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response;
-  };
-
   return {
-    get: (endpoint: string) => callApi('get', endpoint),
-    post: (endpoint: string, body: any) => callApi('post', endpoint, body),
-    put: (endpoint: string, body: any) => callApi('put', endpoint, body),
-    delete: (endpoint: string) => callApi('delete', endpoint),
-    raw,
+    get: (endpoint: string) => callApi('GET', endpoint),
+    post: (endpoint: string, body?: any) => callApi('POST', endpoint, body),
+    put: (endpoint: string, body?: any) => callApi('PUT', endpoint, body),
+    delete: (endpoint: string) => callApi('DELETE', endpoint),
   };
+};
+
+// Simple auth functions
+export const auth = {
+  signIn: async (email: string, password: string) => {
+    const response = await fetch('/api/auth/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Sign in failed');
+    }
+    
+    const data = await response.json();
+    
+    if (data.session?.access_token) {
+      localStorage.setItem('access_token', data.session.access_token);
+    }
+    
+    return data;
+  },
+
+  signOut: async () => {
+    await fetch('/api/auth/signout', { method: 'POST' });
+    localStorage.removeItem('access_token');
+  },
+
+  getSession: async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return null;
+    
+    try {
+      const response = await fetch('/api/auth/user', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        localStorage.removeItem('access_token');
+        return null;
+      }
+      
+      const user = await response.json();
+      return { user, access_token: token };
+    } catch {
+      localStorage.removeItem('access_token');
+      return null;
+    }
+  }
 };

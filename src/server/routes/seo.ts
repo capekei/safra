@@ -1,8 +1,53 @@
 import { Request, Response } from 'express';
 import { DatabaseStorage } from '../database/storage';
-// import { generateSitemapXML, generateRSSFeedXML } from '../../client/src/utils/seo';
 
 const storage = new DatabaseStorage();
+
+// Utility functions for SEO generation
+function generateSitemapXML(urls: Array<{url: string, changefreq: string, priority: number, lastmod?: string}>): string {
+  const urlEntries = urls.map(item => `
+  <url>
+    <loc>${item.url}</loc>
+    <changefreq>${item.changefreq}</changefreq>
+    <priority>${item.priority}</priority>
+    ${item.lastmod ? `<lastmod>${item.lastmod}</lastmod>` : ''}
+  </url>`).join('');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urlEntries}
+</urlset>`;
+}
+
+function generateRSSFeedXML(feedData: {
+  title: string,
+  description: string, 
+  link: string,
+  language: string,
+  items: Array<{title: string, description: string, link: string, pubDate: string, author: string, category?: string}>
+}): string {
+  const items = feedData.items.map(item => `
+    <item>
+      <title><![CDATA[${item.title}]]></title>
+      <description><![CDATA[${item.description}]]></description>
+      <link>${item.link}</link>
+      <pubDate>${item.pubDate}</pubDate>
+      <author>${item.author}</author>
+      ${item.category ? `<category>${item.category}</category>` : ''}
+    </item>`).join('');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>${feedData.title}</title>
+    <description>${feedData.description}</description>
+    <link>${feedData.link}</link>
+    <language>${feedData.language}</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    ${items}
+  </channel>
+</rss>`;
+}
 
 /**
  * Generate and serve sitemap.xml

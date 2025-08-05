@@ -105,7 +105,7 @@ export default function Clasificados() {
         <div className="mb-8">
           <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
             <GlassCard 
-              variant="pill" 
+              
               active={!activeCategory}
               className="cursor-pointer px-4 py-2 text-sm font-medium text-gray-700 whitespace-nowrap"
               onClick={() => handleCategoryChange()}
@@ -155,11 +155,11 @@ export default function Clasificados() {
               });
 
               return (
-                <GlassCard key={classified.id} variant="hover" className="overflow-hidden">
+                <GlassCard key={classified.id} className="overflow-hidden">
                   {/* Featured badge */}
                   {classified.featured && (
                     <div className="absolute top-2 left-2 z-10">
-                      <GlassCard variant="pill" className="px-2 py-1 text-xs font-medium text-primary border border-primary/20">
+                      <GlassCard className="px-2 py-1 text-xs font-medium text-primary border border-primary/20">
                         Destacado
                       </GlassCard>
                     </div>
@@ -188,7 +188,7 @@ export default function Clasificados() {
                   
                   <div className="p-5">
                     <div className="flex items-center justify-between mb-3">
-                      <GlassCard variant="pill" className="px-2 py-1 text-xs font-medium text-gray-600">
+                      <GlassCard className="px-2 py-1 text-xs font-medium text-gray-600">
                         {classified.category?.name}
                       </GlassCard>
                       <span className="text-gray-400 text-xs flex items-center">

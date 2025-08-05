@@ -3,7 +3,7 @@ import { storage } from "../../database/storage";
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
-// import { authenticateSupabase, type AuthRequest } from "../../middleware/auth"; // Temporarily disabled - using Neon/Drizzle stack
+// TODO: Implement proper JWT authentication for user routes when needed
 
 const router = Router();
 
@@ -37,7 +37,7 @@ const upload = multer({
 });
 
 // Get user's classifieds
-router.get("/classifieds", /* authenticateSupabase as any, */ (async (req: any, res: Response) => {
+router.get("/classifieds", (async (req: any, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -53,7 +53,7 @@ router.get("/classifieds", /* authenticateSupabase as any, */ (async (req: any, 
 }));
 
 // Create a new classified
-router.post("/classifieds", /* authenticateSupabase as any, */ upload.array('images', 5), async (req: any, res: Response) => {
+router.post("/classifieds", upload.array('images', 5), async (req: any, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -85,7 +85,7 @@ router.post("/classifieds", /* authenticateSupabase as any, */ upload.array('ima
 });
 
 // Delete a classified
-router.delete("/classifieds/:id", /* authenticateSupabase as any, */ async (req: any, res: Response) => {
+router.delete("/classifieds/:id", async (req: any, res: Response) => {
   try {
     const userId = req.user?.id;
     const classifiedId = parseInt(req.params.id);
@@ -109,7 +109,7 @@ router.delete("/classifieds/:id", /* authenticateSupabase as any, */ async (req:
 });
 
 // Get user's reviews
-router.get("/reviews", /* authenticateSupabase as any, */ (async (req: any, res: Response) => {
+router.get("/reviews", (async (req: any, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -125,7 +125,7 @@ router.get("/reviews", /* authenticateSupabase as any, */ (async (req: any, res:
 }) as any);
 
 // Create a new review
-router.post("/reviews", /* authenticateSupabase as any, */ upload.array('images', 3), async (req: any, res: Response) => {
+router.post("/reviews", upload.array('images', 3), async (req: any, res: Response) => {
   try {
     const userId = req.user?.id;
     const user = (req.session as any)?.user;
@@ -188,7 +188,7 @@ router.post("/reviews", /* authenticateSupabase as any, */ upload.array('images'
 });
 
 // Delete a review
-router.delete("/reviews/:id", /* authenticateSupabase as any, */ async (req: any, res: Response) => {
+router.delete("/reviews/:id", async (req: any, res: Response) => {
   try {
     const userId = req.user?.id;
     const reviewId = parseInt(req.params.id);
@@ -212,7 +212,7 @@ router.delete("/reviews/:id", /* authenticateSupabase as any, */ async (req: any
 });
 
 // Get user preferences
-router.get("/preferences", /* authenticateSupabase as any, */ async (req: any, res: Response) => {
+router.get("/preferences", async (req: any, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -236,7 +236,7 @@ router.get("/preferences", /* authenticateSupabase as any, */ async (req: any, r
 });
 
 // Update user preferences
-router.put("/preferences", /* authenticateSupabase as any, */ async (req: any, res: Response) => {
+router.put("/preferences", async (req: any, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {

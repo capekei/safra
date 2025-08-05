@@ -274,7 +274,7 @@ Environment Variables:
 Examples:
   node scripts/health-check.js                    # Test local development
   NODE_ENV=production node scripts/health-check.js # Test production
-  BASE_URL=http://localhost:3000 node scripts/health-check.js # Custom URL
+  BASE_URL=http://localhost:5173 node scripts/health-check.js # Custom URL
     `);
     process.exit(0);
   }

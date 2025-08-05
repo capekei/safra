@@ -12,7 +12,7 @@ export function CategoryNav({ activeCategory, onCategoryChange }: CategoryNavPro
     <div className="mb-8">
       <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
         <GlassCard 
-          variant="pill" 
+          
           active={!activeCategory}
           className="cursor-pointer px-4 py-2 text-sm font-medium text-gray-700 whitespace-nowrap"
           onClick={() => onCategoryChange()}

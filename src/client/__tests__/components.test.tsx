@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Router } from 'wouter';
 
-// Mock Supabase
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
+// Mock API client
+vi.mock('@/lib/api', () => ({
+  auth: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
       onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
@@ -134,12 +134,14 @@ describe('Component Rendering Tests', () => {
     });
   });
 
-  describe('Authentication Hook', () => {
-    it('provides authentication state', async () => {
-      const { useSupabaseAuth } = await import('@/hooks/useSupabaseAuth');
+  describe('Authentication', () => {
+    it('provides auth functions', async () => {
+      const { auth } = await import('@/lib/api');
       
-      // This is a basic test to ensure the hook can be imported
-      expect(typeof useSupabaseAuth).toBe('function');
+      // This is a basic test to ensure auth functions exist
+      expect(typeof auth.signIn).toBe('function');
+      expect(typeof auth.signOut).toBe('function');
+      expect(typeof auth.getSession).toBe('function');
     });
   });
 });

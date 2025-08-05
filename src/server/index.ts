@@ -115,7 +115,7 @@ app.use((req, res, next) => {
       connectionString: process.env.DATABASE_URL,
       ssl: {
         rejectUnauthorized: true,
-        ca: process.env.SUPABASE_CA_CERT
+        ca: process.env.DATABASE_CA_CERT
       }
     });
     const db = drizzle(testPool);

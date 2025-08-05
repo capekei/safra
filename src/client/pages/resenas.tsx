@@ -133,7 +133,7 @@ export default function Resenas() {
         <div className="mb-8">
           <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
             <GlassCard 
-              variant="pill" 
+              
               active={!activeCategory}
               className="cursor-pointer px-4 py-2 text-sm font-medium text-gray-700 whitespace-nowrap"
               onClick={() => handleCategoryChange()}
@@ -178,11 +178,11 @@ export default function Resenas() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {businesses?.map((business: any) => (
-              <GlassCard key={business.id} variant="hover" className="overflow-hidden">
+              <GlassCard key={business.id} className="overflow-hidden">
                 {/* Verified badge */}
                 {business.verified && (
                   <div className="absolute top-2 left-2 z-10">
-                    <GlassCard variant="pill" className="px-2 py-1 text-xs font-medium text-primary border border-primary/20 bg-primary/10">
+                    <GlassCard className="px-2 py-1 text-xs font-medium text-primary border border-primary/20 bg-primary/10">
                       ✓ Verificado
                     </GlassCard>
                   </div>
@@ -212,7 +212,7 @@ export default function Resenas() {
                 
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <GlassCard variant="pill" className="px-2 py-1 text-xs font-medium text-gray-600">
+                    <GlassCard className="px-2 py-1 text-xs font-medium text-gray-600">
                       {business.category?.name}
                     </GlassCard>
                     <div className="flex items-center space-x-1">

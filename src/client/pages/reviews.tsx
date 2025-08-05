@@ -363,7 +363,7 @@ export default function AdminReviews() {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setSelectedReview(null)}>
+              <Button onClick={() => setSelectedReview(null)}>
                 Cerrar
               </Button>
             </DialogFooter>
@@ -389,7 +389,7 @@ export default function AdminReviews() {
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+              <Button onClick={() => setShowRejectDialog(false)}>
                 Cancelar
               </Button>
               <Button

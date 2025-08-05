@@ -670,7 +670,7 @@ export default function AdminAds() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Link href={`/admin/ads/${ad.id}/analytics`}>
-                      <Button variant="outline" size="icon">
+                      <Button size="icon">
                         <BarChart3 className="h-4 w-4" />
                       </Button>
                     </Link>

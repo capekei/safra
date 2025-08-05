@@ -144,7 +144,7 @@ export default function Article() {
           {/* Enhanced article header */}
           <div className="mb-8 text-center max-w-4xl mx-auto">
             <div className="flex items-center justify-center space-x-4 mb-4">
-              <GlassCard variant="pill" className="px-4 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
+              <GlassCard className="px-4 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
                 <span className="flex items-center text-sm font-semibold text-primary">
                   <Tag className="h-3 w-3 mr-1" />
                   {article.category?.name}

@@ -13,7 +13,7 @@ export default function SimpleTest() {
             Backend API: <span className="font-mono">localhost:4000</span>
           </p>
           <p className="text-sm text-gray-500">
-            Frontend: <span className="font-mono">localhost:3000</span>
+            Frontend: <span className="font-mono">localhost:5173</span>
           </p>
         </div>
       </div>

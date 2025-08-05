@@ -1,7 +1,7 @@
 /**
  * SafraReport Unified JWT Authentication System
  * Production-grade JWT authentication with bcrypt password hashing
- * Replaces Supabase Auth + custom admin auth with single system
+ * Unified JWT authentication system for SafraReport
  */
 
 import bcrypt from 'bcrypt';
@@ -565,7 +565,7 @@ export class UnifiedAuthService {
     return jwt.sign(
       { ...payload, type: 'access' },
       authConfig.jwtSecret,
-      { expiresIn: authConfig.jwtExpiresIn }
+      { expiresIn: authConfig.jwtExpiresIn } as jwt.SignOptions
     );
   }
 
@@ -573,7 +573,7 @@ export class UnifiedAuthService {
     return jwt.sign(
       { ...payload, type: 'refresh' },
       authConfig.jwtSecret,
-      { expiresIn: authConfig.jwtRefreshExpiresIn }
+      { expiresIn: authConfig.jwtRefreshExpiresIn } as jwt.SignOptions
     );
   }
 

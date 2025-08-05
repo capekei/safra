@@ -433,7 +433,7 @@ export default function AdminUsers() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              <Button onClick={() => setShowCreateDialog(false)}>
                 Cancelar
               </Button>
               <Button

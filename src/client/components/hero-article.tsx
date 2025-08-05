@@ -35,7 +35,7 @@ export function HeroArticle({ article }: HeroArticleProps) {
 
   return (
     <div className="mb-12">
-      <GlassCard variant="hover" className="overflow-hidden">
+      <GlassCard className="overflow-hidden">
         {article.featuredImage && (
           <div className="relative">
             <img 
@@ -50,7 +50,7 @@ export function HeroArticle({ article }: HeroArticleProps) {
         
         <div className="p-6 md:p-8">
           <div className="flex items-center space-x-4 mb-4">
-            <GlassCard variant="pill" className="px-3 py-1 text-sm font-medium text-primary border border-primary/20">
+            <GlassCard className="px-3 py-1 text-sm font-medium text-primary border border-primary/20">
               {article.category?.name}
             </GlassCard>
             <span className="text-gray-500 text-sm flex items-center">
