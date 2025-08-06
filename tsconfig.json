@@ -6,61 +6,79 @@
     "skipLibCheck": true,
     "allowJs": true,
 
-    /* Bundler mode */
+    /* Module resolution */
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false,
+    "noEmit": true,
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
 
-    /* Linting */
+    /* Type checking */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noImplicitOverride": true,
+    "skipDefaultLibCheck": true,
+    "preserveConstEnums": true,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
 
-    /* Path mappings for single repo structure */
+    /* Path mappings for monorepo structure */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@/client/*": ["./src/client/*"],
       "@/server/*": ["./src/server/*"],
       "@/shared/*": ["./src/shared/*"],
-      "~/client/*": ["./src/client/*"],
-      "~/server/*": ["./src/server/*"], 
-      "~/shared/*": ["./src/shared/*"]
+      "@/components/*": ["./src/client/components/*"],
+      "@/pages/*": ["./src/client/pages/*"],
+      "@/hooks/*": ["./src/client/hooks/*"],
+      "@/lib/*": ["./src/client/lib/*"],
+      "@/utils/*": ["./src/server/utils/*"],
+      "@/middleware/*": ["./src/server/middleware/*"]
     },
 
-    /* Output configuration */
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "removeComments": false,
-    "importHelpers": true
+    /* Performance optimizations */
+    "incremental": true,
+    "composite": false,
+    
+    /* Decorators (for future use) */
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "*.ts",
+    "vite.config.ts",
+    "drizzle.config.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "build",
     ".next",
+    "coverage",
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "**/*.spec.tsx",
+    "scripts/migrate-database.ts"
+  ],
+  "references": [
+    { "path": "./src/shared" }
   ],
   "ts-node": {
     "esm": true,
-    "experimentalSpecifierResolution": "node"
+    "experimentalSpecifierResolution": "node",
+    "transpileOnly": true,
+    "compilerOptions": {
+      "module": "ESNext",
+      "noEmit": false
+    }
   }
 }

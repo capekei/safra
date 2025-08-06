@@ -1,0 +1,63 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "outDir": "./dist/server",
+    "rootDir": "./src",
+    
+    /* Enable output for production build */
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": true,
+    "removeComments": false,
+    
+    /* Node.js optimizations */
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    
+    /* Path mappings for server build */
+    "baseUrl": ".",
+    "paths": {
+      "@/server/*": ["./src/server/*"],
+      "@/shared/*": ["./src/shared/*"]
+    },
+    
+    /* Type checking optimized for production */
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": [
+    "src/server/**/*",
+    "src/shared/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/client/**/*",
+    "src/shared/dist/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "coverage",
+    "scripts/migrate-database.ts"
+  ],
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node",
+    "transpileOnly": false,
+    "compilerOptions": {
+      "module": "ESNext",
+      "noEmit": false
+    }
+  }
+}

@@ -43,13 +43,23 @@ class EnvManager {
     console.log('✅ Created .env with generated secrets');
   }
 
-  // Validate environment
+  // Validate environment with Dominican Republic specific checks
   validate(environment = process.env.NODE_ENV || 'development') {
     require('dotenv').config();
     
     const requirements = {
-      always: ['DATABASE_URL', 'JWT_SECRET', 'NODE_ENV'],
-      production: ['SESSION_SECRET', 'CORS_ORIGINS'],
+      always: [
+        'DATABASE_URL', 
+        'JWT_SECRET', 
+        'NODE_ENV', 
+        'PORT'
+      ],
+      production: [
+        'SESSION_SECRET', 
+        'CORS_ORIGINS',
+        'TRUST_PROXY',
+        'SECURE_COOKIES'
+      ],
       development: []
     };
 
@@ -61,19 +71,36 @@ class EnvManager {
     const missing = required.filter(key => !process.env[key]);
     const warnings = [];
 
-    // Check for insecure values
+    // Security validations for production
     if (environment === 'production') {
-      if (process.env.JWT_SECRET?.includes('change-this')) {
-        warnings.push('JWT_SECRET contains insecure placeholder');
+      if (process.env.JWT_SECRET?.includes('GENERATE') || process.env.JWT_SECRET?.length < 64) {
+        warnings.push('JWT_SECRET must be at least 64 characters and not contain placeholder text');
       }
       if (process.env.SECURE_COOKIES !== 'true') {
         warnings.push('SECURE_COOKIES should be true in production');
       }
+      if (process.env.TRUST_PROXY !== 'true') {
+        warnings.push('TRUST_PROXY should be true for Render deployment');
+      }
       if (!process.env.DATABASE_URL?.includes('sslmode=require')) {
-        warnings.push('DATABASE_URL should include sslmode=require');
+        warnings.push('DATABASE_URL should include sslmode=require for secure connection');
+      }
+      if (process.env.PORT !== '10000') {
+        warnings.push('PORT should be 10000 for Render deployment');
       }
     }
 
+    // Dominican Republic specific validations
+    const drValidations = this.validateDominicanRepublicConfig();
+    warnings.push(...drValidations);
+
+    // Database URL validation
+    const dbValidation = this.validateDatabaseUrl(process.env.DATABASE_URL);
+    if (dbValidation.error) {
+      warnings.push(`DATABASE_URL: ${dbValidation.error}`);
+    }
+
+    // Report results
     if (missing.length > 0) {
       console.error('❌ Missing required variables:');
       missing.forEach(key => console.error(`   - ${key}`));
@@ -81,11 +108,81 @@ class EnvManager {
     }
 
     if (warnings.length > 0) {
-      console.warn('⚠️  Warnings:');
+      console.warn('⚠️  Configuration warnings:');
       warnings.forEach(w => console.warn(`   - ${w}`));
     }
 
     console.log('✅ Environment validated successfully');
+    if (environment === 'production') {
+      console.log('🇩🇴 Dominican Republic optimizations detected');
+    }
+  }
+
+  // Dominican Republic specific configuration validation
+  validateDominicanRepublicConfig() {
+    const warnings = [];
+    const drConfig = {
+      timezone: process.env.VITE_DEFAULT_TIMEZONE || process.env.DEFAULT_TIMEZONE,
+      currency: process.env.VITE_DEFAULT_CURRENCY || process.env.DEFAULT_CURRENCY,
+      locale: process.env.VITE_DEFAULT_LOCALE || process.env.DEFAULT_LOCALE,
+      country: process.env.DEFAULT_COUNTRY
+    };
+
+    // Check Dominican Republic specific settings
+    if (drConfig.timezone && drConfig.timezone !== 'America/Santo_Domingo') {
+      warnings.push('Consider using DEFAULT_TIMEZONE=America/Santo_Domingo for Dominican Republic');
+    }
+    
+    if (drConfig.currency && drConfig.currency !== 'DOP') {
+      warnings.push('Consider using DEFAULT_CURRENCY=DOP for Dominican Peso');
+    }
+    
+    if (drConfig.locale && drConfig.locale !== 'es-DO') {
+      warnings.push('Consider using DEFAULT_LOCALE=es-DO for Dominican Spanish');
+    }
+
+    if (drConfig.country && drConfig.country !== 'DO') {
+      warnings.push('Consider using DEFAULT_COUNTRY=DO for Dominican Republic');
+    }
+
+    // Mobile optimization checks
+    if (process.env.MOBILE_FIRST !== 'true') {
+      warnings.push('Consider enabling MOBILE_FIRST=true for Dominican mobile users');
+    }
+
+    return warnings;
+  }
+
+  // Database URL validation
+  validateDatabaseUrl(url) {
+    if (!url) return { error: 'DATABASE_URL is required' };
+    
+    try {
+      const dbUrl = new URL(url);
+      
+      if (!['postgresql:', 'postgres:'].includes(dbUrl.protocol)) {
+        return { error: 'Must use PostgreSQL protocol (postgresql:// or postgres://)' };
+      }
+
+      if (!dbUrl.hostname || !dbUrl.port) {
+        return { error: 'Must include hostname and port' };
+      }
+
+      if (!dbUrl.pathname || dbUrl.pathname === '/') {
+        return { error: 'Must include database name' };
+      }
+
+      // Production specific checks
+      if (process.env.NODE_ENV === 'production') {
+        if (!url.includes('sslmode=require')) {
+          return { error: 'Production databases must use SSL (add ?sslmode=require)' };
+        }
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return { error: 'Invalid DATABASE_URL format' };
+    }
   }
 
   // Export for deployment
