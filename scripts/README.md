@@ -8,7 +8,6 @@
 - `database/backup.sql` - Respaldo de base de datos
 
 #### Deployment / Despliegue
-- `deployment/setup-supabase-env.sh` - Configurar entorno Supabase
 
 #### Testing / Pruebas
 - `testing/test-commands.sh` - Comandos de prueba principales

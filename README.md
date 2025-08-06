@@ -36,7 +36,7 @@ pnpm install
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your database and Supabase credentials
+# Edit .env with your database credentials
 
 # Start development servers
 pnpm dev:all
@@ -159,7 +159,7 @@ Use workspace dependencies for internal packages:
 ### Environment Variables
 
 - Copy `.env.example` to `.env`
-- Configure database and Supabase credentials
+- Configure database credentials
 - Use different `.env` files for different environments
 
 ## 🧪 Testing

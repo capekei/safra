@@ -2,7 +2,7 @@
 -- SafraReport Row Level Security (RLS) Policies
 -- ===================================
 -- This file contains all RLS policies for production security
--- Run this on your Supabase database to enable proper access control
+-- Run this on your PostgreSQL database to enable proper access control
 
 -- Enable RLS on all tables
 ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
@@ -266,14 +266,14 @@ CREATE TRIGGER audit_admin_users
 /*
 To use these RLS policies in your application:
 
-1. Run this SQL file on your Supabase database
+1. Run this SQL file on your PostgreSQL database
 2. In your server middleware, set the admin context:
    
    // After authenticating admin user
    await db.execute(sql`SELECT set_current_admin_user(${adminUserId})`);
 
 3. For public API endpoints, no context setting needed
-4. For user endpoints, ensure Supabase auth is properly configured
+4. For user endpoints, ensure JWT auth is properly configured
 
 Example middleware usage:
 ```typescript

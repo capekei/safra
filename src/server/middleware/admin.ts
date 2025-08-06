@@ -32,10 +32,6 @@ export async function logAdminAction(
     }
 
     // Note: Temporarily disabled audit logging due to schema mismatch
-    // adminUserId expects integer but Supabase provides string IDs
-    // This should be fixed by either:
-    // 1. Updating schema to use varchar for adminUserId
-    // 2. Creating a mapping table between Supabase user IDs and admin user integers
     /*
     await db.insert(auditLogs).values({
       adminUserId: req.adminUser.id,

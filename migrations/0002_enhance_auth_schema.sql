@@ -1,5 +1,5 @@
 -- SafraReport Enhanced Authentication Schema Migration
--- Adds password field to users table and removes Supabase dependencies
+-- Adds password field to users table and enhances authentication
 -- Migration: 0002_enhance_auth_schema.sql
 
 BEGIN;

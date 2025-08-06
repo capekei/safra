@@ -396,7 +396,7 @@ class DatabaseMigrator {
 
     try {
       if (tableName === 'users') {
-        // Special handling for users table (merge Supabase auth)
+        // Special handling for users table (merge auth systems)
         await this.migrateUsersWithAuth(result);
       } else {
         // Standard table migration

@@ -1,4 +1,4 @@
-// Simple API client without Supabase dependency
+// Simple API client for JWT authentication
 export const useApiClient = () => {
   const getAccessToken = async () => {
     // Get token from localStorage or sessionStorage

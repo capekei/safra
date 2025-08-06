@@ -21,6 +21,11 @@ import { upload, getFileUrl } from "../../upload";
 import { DR_ERRORS, safeInsertData } from "../../lib/helpers/dominican";
 import { logAdminAction } from "../../middleware/admin";
 
+// Import editorial workflow routes
+import articleReviewRoutes from "./article-review.js";
+import versionsRoutes from "./versions.js";
+import commentsRoutes from "./comments.js";
+
 const router = Router();
 
 // Apply the base authentication middleware to all admin routes
@@ -44,7 +49,7 @@ router.get("/articles", (async (req: any, res: Response) => {
     if (categoryId) {
       const catId = safeParseInt(categoryId as string, 0);
       if (catId > 0) {
-        conditions.push(eq(articles.categoryId, catId));
+        conditions.push(eq(articles.category_id, catId));
       }
     }
     if (published !== undefined) {
@@ -59,12 +64,12 @@ router.get("/articles", (async (req: any, res: Response) => {
       })
       .from(articles)
 
-      .leftJoin(categories, eq(articles.categoryId, categories.id));
+      .leftJoin(categories, eq(articles.category_id, categories.id));
 
     const result = await (conditions.length > 0
       ? baseQuery.where(and(...conditions))
       : baseQuery)
-      .orderBy(desc(articles.createdAt))
+      .orderBy(desc(articles.created_at))
       .limit(Number(limit))
       .offset(offset);
 
@@ -267,7 +272,7 @@ router.get("/classifieds", (async (req: any, res: Response) => {
     }
 
     const result = await query
-      .orderBy(desc(classifieds.createdAt))
+      .orderBy(desc(classifieds.created_at))
       .limit(Number(limit))
       .offset(offset);
 
@@ -292,7 +297,7 @@ router.get("/reviews", (async (req: any, res: Response) => {
     }
 
     const result = await query
-      .orderBy(desc(reviews.createdAt))
+      .orderBy(desc(reviews.created_at))
       .limit(Number(limit))
       .offset(offset);
 
@@ -351,9 +356,9 @@ router.get("/users", (async (req: any, res: Response) => {
     const { page = 1, limit = 20 } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
-    // Note: This queries the Supabase users table, not the old adminUsers table
+    // Note: This queries the admin users table
     const result = await db.select().from(adminUsers)
-      .orderBy(desc(adminUsers.createdAt))
+      .orderBy(desc(adminUsers.created_at))
       .limit(Number(limit))
       .offset(offset);
 
@@ -371,7 +376,7 @@ router.get("/audit-logs", (async (req: any, res: Response) => {
     const offset = (Number(page) - 1) * Number(limit);
 
     const result = await db.select().from(auditLogs)
-      .orderBy(desc(auditLogs.createdAt))
+      .orderBy(desc(auditLogs.created_at))
       .limit(Number(limit))
       .offset(offset);
 
@@ -381,5 +386,10 @@ router.get("/audit-logs", (async (req: any, res: Response) => {
     res.status(500).json({ error: "Error al obtener logs de auditoría" });
   }
 }) as any);
+
+// Editorial workflow routes
+router.use("/article-review", articleReviewRoutes);
+router.use("/versions", versionsRoutes);
+router.use("/comments", commentsRoutes);
 
 export default router;
