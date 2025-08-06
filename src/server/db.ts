@@ -42,10 +42,16 @@ try {
       delete: () => ({ where: () => ({}) })
     };
   } else {
-    // Real database connection
+    // Real database connection with proper SSL for Render
+    const isProduction = process.env.NODE_ENV === 'production';
+    const sslConfig = isProduction ? 'require' : false;
+    
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
+      ssl: sslConfig,
+      max: parseInt(process.env.DATABASE_MAX_CONNECTIONS || '20'),
+      connectionTimeoutMillis: parseInt(process.env.DATABASE_CONNECTION_TIMEOUT || '5000'),
+      idleTimeoutMillis: 30000,
     });
     db = drizzle(pool, { schema });
   }

@@ -10,8 +10,8 @@ services:
     env: node
     plan: starter
     region: ohio
-    buildCommand: npm ci && ./scripts/simple-build.sh
-    startCommand: cd src/server && npx tsx index.ts
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
     healthCheckPath: /api/health
     
     # Auto-scaling configuration

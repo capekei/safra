@@ -30,7 +30,7 @@
     "db:push": "drizzle-kit push --config drizzle.config.ts",
     "db:seed": "tsx src/server/seeds/safe-seed.ts",
     "db:migrate": "tsx scripts/migrate-database.ts",
-    "start": "NODE_ENV=production cd src/server && npx tsx index.ts",
+    "start": "NODE_ENV=production npx tsx src/server/index.ts",
     "preview": "cd src/client && vite preview",
     "lint": "eslint src --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "npm run lint -- --fix",
@@ -40,7 +40,12 @@
     "migrate:consolidate-packages": "node scripts/consolidate-packages.js",
     "health-check": "node scripts/health-check.cjs",
     "health-check:prod": "NODE_ENV=production node scripts/health-check.cjs",
-    "verify-db": "node scripts/verify-database.cjs"
+    "verify-db": "node scripts/verify-database.cjs",
+    "env": "node scripts/env-manager.cjs",
+    "env:init": "node scripts/env-manager.cjs init",
+    "env:validate": "node scripts/env-manager.cjs validate",
+    "env:generate-secrets": "node scripts/env-manager.cjs generate-secrets",
+    "env:export": "node scripts/env-manager.cjs export"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

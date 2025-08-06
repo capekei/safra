@@ -76,32 +76,58 @@ app.use((req, res, next) => {
 (async () => {
   // Critical deployment checks
   
-  // Validate critical environment variables with masked logging
-  if (!process.env.DATABASE_URL) {
-    console.error("❌ FATAL: DATABASE_URL environment variable is missing!");
-    console.error("Please configure DATABASE_URL secret in Replit");
-    process.exit(1);
+  // Enhanced environment variable validation
+  const requiredEnvVars = {
+    DATABASE_URL: process.env.DATABASE_URL,
+    NODE_ENV: process.env.NODE_ENV || 'development',
+    PORT: process.env.PORT || '10000'
+  };
+
+  // Check for required variables
+  for (const [key, value] of Object.entries(requiredEnvVars)) {
+    if (!value && key === 'DATABASE_URL') {
+      console.error(`❌ FATAL: ${key} environment variable is missing!`);
+      console.error("Please configure DATABASE_URL in your deployment environment");
+      process.exit(1);
+    }
   }
   
   // Comprehensive DATABASE_URL validation
-  const dbUrlLength = process.env.DATABASE_URL?.length || 0;
+  const dbUrl = process.env.DATABASE_URL!;
+  const dbUrlLength = dbUrl.length;
   
-  // Validate URL format and SSL requirement
-  const dbUrl = process.env.DATABASE_URL;
+  console.log(`🔍 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🔌 Database URL length: ${dbUrlLength} characters`);
+  
+  // Validate URL format
   if (!dbUrl.startsWith('postgresql://') && !dbUrl.startsWith('postgres://')) {
     console.error("❌ FATAL: DATABASE_URL must start with 'postgresql://' or 'postgres://'");
     process.exit(1);
   }
   
-  if (!dbUrl.includes('sslmode=require')) {
-    console.warn("⚠️  WARNING: DATABASE_URL missing 'sslmode=require' - may cause deployment issues");
+  // SSL validation for production
+  if (process.env.NODE_ENV === 'production') {
+    if (!dbUrl.includes('sslmode=require') && !dbUrl.includes('ssl=true')) {
+      console.warn("⚠️  WARNING: DATABASE_URL missing SSL configuration for production");
+      console.warn("   Recommended: Add '?sslmode=require' to your DATABASE_URL");
+    }
   }
   
-  if (dbUrlLength < 50) {
+  if (dbUrlLength < 30) {
     console.error("❌ FATAL: DATABASE_URL appears invalid (too short)");
-    console.error("Expected format: postgresql://user:pass@host:port/db?sslmode=require");
+    console.error("Expected format: postgresql://user:pass@host:port/db");
+    if (process.env.NODE_ENV === 'production') {
+      console.error("For production: postgresql://user:pass@host:port/db?sslmode=require");
+    }
     process.exit(1);
   }
+
+  // Log deployment environment info (without sensitive data)
+  console.log(`🚀 Starting SafraReport Server`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🔌 Port: ${process.env.PORT || '10000'}`);
+  console.log(`🗄️  Database: ${dbUrl.split('@')[1]?.split('/')[0] || 'configured'}`);
+  console.log('');
   
   
   // Test database connection with detailed diagnostics
@@ -113,10 +139,9 @@ app.use((req, res, next) => {
     
     const testPool = new Pool({ 
       connectionString: process.env.DATABASE_URL,
-      ssl: {
-        rejectUnauthorized: true,
-        ca: process.env.DATABASE_CA_CERT
-      }
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      max: parseInt(process.env.DATABASE_MAX_CONNECTIONS || '20'),
+      connectionTimeoutMillis: parseInt(process.env.DATABASE_CONNECTION_TIMEOUT || '5000')
     });
     const db = drizzle(testPool);
     
@@ -176,7 +201,7 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 3000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '4000', 10);
+  const port = parseInt(process.env.PORT || '10000', 10);
   const host = "0.0.0.0";
   
   server.listen(port, host, () => {

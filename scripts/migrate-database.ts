@@ -1,12 +1,11 @@
 #!/usr/bin/env tsx
 
 /**
- * SafraReport Elite Database Migration Script
- * Zero-downtime migration from Neon + Supabase to Render PostgreSQL
+ * SafraReport Database Migration Script
+ * Database migration and setup for Render PostgreSQL
  * 
  * Features:
  * - Data integrity validation with checksums
- * - Dual-write capability for zero downtime
  * - Comprehensive rollback procedures
  * - Real-time migration monitoring
  * - Production-grade error handling
@@ -21,10 +20,8 @@ import { config } from 'dotenv';
 config();
 
 interface MigrationConfig {
-  // Source databases
-  neonUrl: string;
-  supabaseUrl: string;
-  supabaseServiceKey: string;
+  // Source database
+  sourceUrl: string;
   
   // Target database
   renderUrl: string;
@@ -32,7 +29,6 @@ interface MigrationConfig {
   // Migration settings
   batchSize: number;
   maxRetries: number;
-  dualWriteMode: boolean;
   validateChecksums: boolean;
 }
 
@@ -54,13 +50,13 @@ interface MigrationResult {
 
 class DatabaseMigrator {
   private config: MigrationConfig;
-  private neonPool: Pool;
+  private sourcePool: Pool;
   private renderPool: Pool;
   private migrationLog: string[] = [];
 
   constructor(config: MigrationConfig) {
     this.config = config;
-    this.neonPool = new Pool({ connectionString: config.neonUrl });
+    this.sourcePool = new Pool({ connectionString: config.sourceUrl });
     this.renderPool = new Pool({ connectionString: config.renderUrl });
   }
 
@@ -68,12 +64,11 @@ class DatabaseMigrator {
    * Main migration orchestrator
    */
   async migrate(): Promise<void> {
-    console.log('🚀 SafraReport Elite Database Migration');
-    console.log('======================================');
-    console.log(`Source: Neon + Supabase`);
+    console.log('🚀 SafraReport Database Migration');
+    console.log('=================================');
+    console.log(`Source: PostgreSQL Database`);
     console.log(`Target: Render PostgreSQL`);
     console.log(`Batch Size: ${this.config.batchSize}`);
-    console.log(`Dual Write Mode: ${this.config.dualWriteMode ? 'ENABLED' : 'DISABLED'}`);
     console.log('');
 
     try {
@@ -114,13 +109,11 @@ class DatabaseMigrator {
     await this.testConnections();
 
     // Get source database statistics
-    const neonStats = await this.getDatabaseStats(this.neonPool, 'Neon');
-    const supabaseStats = await this.getSupabaseAuthStats();
+    const sourceStats = await this.getDatabaseStats(this.sourcePool, 'Source');
 
     console.log('\n📊 Source Database Statistics:');
-    console.log(`Neon Tables: ${neonStats.length}`);
-    console.log(`Total Neon Rows: ${neonStats.reduce((sum, t) => sum + t.rowCount, 0)}`);
-    console.log(`Supabase Auth Users: ${supabaseStats.rowCount}`);
+    console.log(`Source Tables: ${sourceStats.length}`);
+    console.log(`Total Source Rows: ${sourceStats.reduce((sum, t) => sum + t.rowCount, 0)}`);
 
     // Create backup snapshots
     await this.createBackupSnapshots();
@@ -135,16 +128,13 @@ class DatabaseMigrator {
     console.log('🔌 Testing database connections...');
 
     try {
-      // Test Neon connection
-      const neonResult = await this.neonPool.query('SELECT NOW() as timestamp, version()');
-      console.log(`✅ Neon connected: ${neonResult.rows[0].timestamp}`);
+      // Test Source connection
+      const sourceResult = await this.sourcePool.query('SELECT NOW() as timestamp, version()');
+      console.log(`✅ Source connected: ${sourceResult.rows[0].timestamp}`);
 
       // Test Render connection
       const renderResult = await this.renderPool.query('SELECT NOW() as timestamp, version()');
       console.log(`✅ Render connected: ${renderResult.rows[0].timestamp}`);
-
-      // Test Supabase connection (via API)
-      console.log('✅ Supabase API accessible');
       
     } catch (error) {
       throw new Error(`Database connection failed: ${error.message}`);
@@ -183,19 +173,6 @@ class DatabaseMigrator {
     return stats;
   }
 
-  /**
-   * Get Supabase auth statistics
-   */
-  private async getSupabaseAuthStats(): Promise<TableStats> {
-    // This would typically use Supabase admin API
-    // For now, return mock data - replace with actual implementation
-    return {
-      name: 'auth.users',
-      rowCount: 0, // Will be populated from actual Supabase API
-      checksum: '',
-      lastModified: new Date()
-    };
-  }
 
   /**
    * Calculate table checksum for integrity validation
@@ -445,17 +422,14 @@ class DatabaseMigrator {
   }
 
   /**
-   * Migrate users table with Supabase auth merge
+   * Migrate users table with proper password handling
    */
   private async migrateUsersWithAuth(result: MigrationResult): Promise<void> {
-    // 1. Migrate existing users from Neon
-    const neonUsers = await this.neonPool.query('SELECT * FROM users ORDER BY created_at');
+    // Migrate existing users from source database
+    const sourceUsers = await this.sourcePool.query('SELECT * FROM users ORDER BY created_at');
     
-    // 2. Get Supabase auth users (would use actual Supabase API)
-    // const supabaseUsers = await this.getSupabaseAuthUsers();
-    
-    // 3. Merge and migrate with password placeholders
-    for (const user of neonUsers.rows) {
+    // Migrate users with password hash field
+    for (const user of sourceUsers.rows) {
       try {
         await this.renderPool.query(`
           INSERT INTO users (
@@ -470,14 +444,14 @@ class DatabaseMigrator {
         `, [
           user.id,
           user.email,
-          null, // Will be set during auth migration
+          user.password_hash || null, // Use existing password hash or null
           user.first_name,
           user.last_name,
           user.profile_image_url,
           user.role || 'user',
           user.created_at,
           user.updated_at,
-          true
+          user.is_active !== false // Default to true if not specified
         ]);
         
         result.rowsMigrated++;
@@ -495,7 +469,7 @@ class DatabaseMigrator {
     let offset = 0;
     
     while (true) {
-      const batch = await this.neonPool.query(
+      const batch = await this.sourcePool.query(
         `SELECT * FROM "${tableName}" ORDER BY 1 LIMIT $1 OFFSET $2`,
         [this.config.batchSize, offset]
       );
@@ -545,7 +519,7 @@ class DatabaseMigrator {
     for (const result of results) {
       if (!result.success) continue;
       
-      const sourceCount = await this.getTableRowCount(this.neonPool, result.table);
+      const sourceCount = await this.getTableRowCount(this.sourcePool, result.table);
       const targetCount = await this.getTableRowCount(this.renderPool, result.table);
       
       if (sourceCount !== targetCount) {
@@ -632,7 +606,7 @@ class DatabaseMigrator {
    */
   private async cleanup(): Promise<void> {
     try {
-      await this.neonPool.end();
+      await this.sourcePool.end();
       await this.renderPool.end();
       console.log('🧹 Database connections closed');
     } catch (error) {
@@ -646,18 +620,15 @@ class DatabaseMigrator {
  */
 async function main(): Promise<void> {
   const config: MigrationConfig = {
-    neonUrl: process.env.DATABASE_URL!,
-    supabaseUrl: process.env.VITE_SUPABASE_URL!,
-    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    sourceUrl: process.env.SOURCE_DATABASE_URL || process.env.DATABASE_URL!,
     renderUrl: process.env.RENDER_DATABASE_URL || process.env.DATABASE_URL!,
     batchSize: parseInt(process.env.MIGRATION_BATCH_SIZE || '1000'),
     maxRetries: parseInt(process.env.MIGRATION_MAX_RETRIES || '10'),
-    dualWriteMode: process.env.MIGRATION_DUAL_WRITE === 'true',
     validateChecksums: process.env.MIGRATION_VALIDATE_CHECKSUMS !== 'false'
   };
 
   // Validate required environment variables
-  if (!config.neonUrl || !config.renderUrl) {
+  if (!config.sourceUrl || !config.renderUrl) {
     throw new Error('Missing required database connection strings');
   }
 

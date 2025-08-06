@@ -21,22 +21,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount user routes
   app.use("/api/user", userRoutes);
-  // Health check endpoint optimized for Dominican mobile networks
+  // Enhanced health check endpoint with database validation
   app.get("/api/health", async (req, res) => {
-    // Simple health check without database dependency for now
-    res.status(200).json({
-      status: "healthy",
+    const healthCheck = {
+      status: "checking",
       timestamp: new Date().toISOString(),
       uptime: Math.floor(process.uptime()),
       memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      environment: process.env.NODE_ENV || 'development',
+      version: process.env.npm_package_version || '1.0.0',
+      checks: {
+        database: false,
+        memory: {
+          used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          percentage: 0,
+        }
+      },
       dominican: {
         currency: "DOP",
         mobile_optimized: true,
         network: "3G_ready"
       },
-      deployment: "render",
-      note: "Database check disabled for initial deployment"
-    });
+      deployment: "render"
+    };
+
+    // Test database connection
+    try {
+      await db.execute(sql`SELECT 1 as test`);
+      healthCheck.checks.database = true;
+    } catch (error) {
+      console.error('Health check database error:', error);
+      healthCheck.checks.database = false;
+    }
+
+    // Calculate memory percentage
+    healthCheck.checks.memory.percentage = Math.round(
+      (healthCheck.checks.memory.used / healthCheck.checks.memory.total) * 100
+    );
+
+    // Determine overall status
+    healthCheck.status = healthCheck.checks.database ? 'healthy' : 'unhealthy';
+    const statusCode = healthCheck.status === 'healthy' ? 200 : 503;
+
+    res.status(statusCode).json(healthCheck);
+  });
+
+  // Liveness probe (required by Render)
+  app.get("/api/health/live", (req, res) => {
+    res.status(200).send('OK');
+  });
+
+  // Readiness probe (required by Render)
+  app.get("/api/health/ready", async (req, res) => {
+    try {
+      await db.execute(sql`SELECT 1 as test`);
+      res.status(200).send('Ready');
+    } catch (error) {
+      console.error('Readiness check failed:', error);
+      res.status(503).send('Not Ready');
+    }
   });
 
   // Debug endpoint for database connection
