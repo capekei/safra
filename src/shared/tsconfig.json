@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
@@ -7,16 +8,29 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    
+    /* Enable for shared library compilation */
     "noEmit": false,
     "outDir": "./dist",
+    "rootDir": ".",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "composite": true,
+    
+    /* Module settings */
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": false,
-    "composite": true
+    "isolatedModules": true
   },
-  "include": ["./**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "./**/*",
+    "./**/*.ts"
+  ],
+  "exclude": [
+    "node_modules", 
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
 }

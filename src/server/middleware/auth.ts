@@ -1,9 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
-import jwt from 'jsonwebtoken';
-import { db } from '../db';
-import { adminUsers, adminSessions } from '../../shared';
-import { eq, and } from 'drizzle-orm';
-import type { InferSelectModel } from 'drizzle-orm';
+import { validateSession, requireAuth, requireAdmin, type AuthRequest } from './session-auth.middleware.js';
+import { sessionAuth } from '../auth/session-auth.js';
 import { z } from "zod";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -72,71 +69,36 @@ router.use(helmet({
   },
 }));
 
-// Middleware to authenticate admin users using admin_users table
+// Middleware to authenticate admin users using session-based auth
 export const authenticateAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const sessionId = req.cookies.admin_session;
-    const authHeader = req.headers.authorization;
+    const adminSessionId = sessionAuth.readAdminSessionCookie(req.headers.cookie);
 
-    if (!sessionId && !authHeader?.startsWith('Bearer ')) {
+    if (!adminSessionId) {
       return res.status(401).json({ 
-        message: 'Autenticación requerida',
-        code: 'NOT_AUTHENTICATED'
+        message: 'Autenticación de administrador requerida',
+        code: 'ADMIN_AUTH_REQUIRED'
       });
     }
 
-    let adminUser;
+    const result = await sessionAuth.validateAdminSession(adminSessionId);
 
-    if (sessionId) {
-      // Verify session from cookie
-      const session = await db.query.adminSessions.findFirst({
-        where: and(
-          eq(adminSessions.id, sessionId),
-          eq(adminSessions.isActive, true)
-        ),
-        with: {
-          adminUser: true
-        }
+    if (!result) {
+      return res.status(401).json({ 
+        message: 'Sesión de administrador inválida o expirada',
+        code: 'ADMIN_SESSION_INVALID'
       });
-
-      if (!session || session.expiresAt < new Date()) {
-        return res.status(401).json({ 
-          message: 'Sesión expirada',
-          code: 'SESSION_EXPIRED'
-        });
-      }
-
-      adminUser = session.adminUser;
-    } else {
-      // Verify JWT token from header
-      const token = authHeader!.substring(7);
-      
-      try {
-        const JWT_SECRET = process.env.JWT_SECRET;
-        if (!JWT_SECRET) {
-          console.error("JWT_SECRET is not defined in environment variables.");
-          return res.status(500).json({ message: 'Internal Server Error', code: 'JWT_SECRET_MISSING' });
-        }
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-        adminUser = await db.query.adminUsers.findFirst({
-          where: eq(adminUsers.id, decoded.userId)
-        });
-      } catch (jwtError) {
-        return res.status(401).json({ 
-          message: 'Token inválido',
-          code: 'INVALID_TOKEN'
-        });
-      }
     }
 
-    if (!adminUser || !adminUser.active) {
+    if (!result.user.active) {
       return res.status(403).json({ 
-        message: 'Usuario administrador inactivo o no encontrado',
-        code: 'ADMIN_INACTIVE_OR_NOT_FOUND'
+        message: 'Usuario administrador inactivo',
+        code: 'ADMIN_INACTIVE'
       });
     }
 
-    req.adminUser = adminUser;
+    req.adminUser = result.user;
+    req.session = result.session;
     next();
   } catch (error) {
     console.error('Error en authenticateAdmin:', error);

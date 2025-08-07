@@ -44,7 +44,7 @@ try {
   } else {
     // Real database connection with proper SSL for Render
     const isProduction = process.env.NODE_ENV === 'production';
-    const sslConfig = isProduction ? 'require' : false;
+    const sslConfig = isProduction ? { rejectUnauthorized: false } : false;
     
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,

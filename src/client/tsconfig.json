@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
@@ -6,9 +7,8 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* Bundler mode */
+    /* Bundler mode - Vite compatible */
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
@@ -21,13 +21,29 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
 
+    /* Path mappings for client */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@/shared/*": ["../shared/*"]
+      "@/shared/*": ["../shared/*"],
+      "@/components/*": ["./components/*"],
+      "@/pages/*": ["./pages/*"],
+      "@/hooks/*": ["./hooks/*"],
+      "@/lib/*": ["./lib/*"]
     }
   },
-  "include": ["./**/*"],
-  "references": [{ "path": "../shared" }]
+  "include": [
+    "./**/*",
+    "./**/*.ts",
+    "./**/*.tsx",
+    "../shared/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ]
 }

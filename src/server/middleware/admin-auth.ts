@@ -37,14 +37,14 @@ export const authenticateAdmin = async (req: AdminAuthRequest, res: Response, ne
       const session = await db.query.adminSessions.findFirst({
         where: and(
           eq(adminSessions.id, sessionId),
-          eq(adminSessions.isActive, true)
+          eq(adminSessions.is_active, true)
         ),
         with: {
           adminUser: true
         }
       });
 
-      if (!session || session.expiresAt < new Date()) {
+      if (!session || session.expires_at < new Date()) {
         return res.status(401).json({ 
           message: 'Sesión expirada',
           code: 'SESSION_EXPIRED'
@@ -232,13 +232,13 @@ export const cleanupExpiredSessions = async () => {
     // Deactivate expired sessions
     await db.update(adminSessions)
       .set({ 
-        isActive: false,
-        updatedAt: now
+        is_active: false,
+        updated_at: now
       })
       .where(and(
-        eq(adminSessions.isActive, true),
+        eq(adminSessions.is_active, true),
         // Sessions that have expired
-        eq(adminSessions.expiresAt, now)
+        eq(adminSessions.expires_at, now)
       ));
     
     

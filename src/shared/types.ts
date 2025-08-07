@@ -12,7 +12,14 @@ import {
   adminSessions, 
   auditLogs,
   users,
-  userPreferences
+  userPreferences,
+  moderationQueue,
+  ads,
+  adPlacements,
+  adAnalytics,
+  articleVersions,
+  articleReviews,
+  editorialComments
 } from './schema';
 
 // Article types
@@ -86,6 +93,29 @@ export type BusinessWithRelations = Business & {
 export type ReviewWithRelations = Review & {
   business?: Business;
 };
+
+// Admin types
+export type ModerationQueue = InferModel<typeof moderationQueue>;
+export type NewModerationQueue = InferModel<typeof moderationQueue, 'insert'>;
+
+export type Ad = InferModel<typeof ads>;
+export type NewAd = InferModel<typeof ads, 'insert'>;
+
+export type AdPlacement = InferModel<typeof adPlacements>;
+export type NewAdPlacement = InferModel<typeof adPlacements, 'insert'>;
+
+export type AdAnalytics = InferModel<typeof adAnalytics>;
+export type NewAdAnalytics = InferModel<typeof adAnalytics, 'insert'>;
+
+// Editorial workflow types
+export type ArticleVersion = InferModel<typeof articleVersions>;
+export type NewArticleVersion = InferModel<typeof articleVersions, 'insert'>;
+
+export type ArticleReview = InferModel<typeof articleReviews>;
+export type NewArticleReview = InferModel<typeof articleReviews, 'insert'>;
+
+export type EditorialComment = InferModel<typeof editorialComments>;
+export type NewEditorialComment = InferModel<typeof editorialComments, 'insert'>;
 
 // Insert types for common operations
 export type InsertArticle = NewArticle;

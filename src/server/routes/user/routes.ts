@@ -96,7 +96,7 @@ router.delete("/classifieds/:id", async (req: any, res: Response) => {
 
     // Check if user owns this classified
     const classified = await storage.getClassifiedById(classifiedId);
-    if (!classified || classified.userId !== userId) {
+    if (!classified || classified.user_id !== userId) {
       return res.status(403).json({ message: "No tienes permiso para eliminar este clasificado" });
     }
 
@@ -157,9 +157,7 @@ router.post("/reviews", upload.array('images', 3), async (req: any, res: Respons
         
         const newBusiness = await storage.createBusiness({
           name: req.body.businessName,
-          slug: slug,
-          categoryId: parseInt(req.body.categoryId),
-          active: false, // New businesses start as inactive until verified
+          category_id: parseInt(req.body.categoryId),
         });
         businessId = newBusiness.id;
       }
@@ -199,7 +197,7 @@ router.delete("/reviews/:id", async (req: any, res: Response) => {
 
     // Check if user owns this review
     const review = await storage.getReviewById(reviewId);
-    if (!review || review.userId !== userId) {
+    if (!review || review.user_id !== userId) {
       return res.status(403).json({ message: "No tienes permiso para eliminar esta reseña" });
     }
 

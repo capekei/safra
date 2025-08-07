@@ -139,7 +139,7 @@ app.use((req, res, next) => {
     
     const testPool = new Pool({ 
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       max: parseInt(process.env.DATABASE_MAX_CONNECTIONS || '20'),
       connectionTimeoutMillis: parseInt(process.env.DATABASE_CONNECTION_TIMEOUT || '5000')
     });

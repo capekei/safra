@@ -71,7 +71,7 @@ export async function generateSitemap(req: Request, res: Response) {
     const articles = await storage.getArticles(1000, 0); // Get up to 1000 articles
     const articleUrls = articles.map(article => ({
       url: `${baseUrl}/articles/${article.id}`,
-      lastmod: article.updatedAt || article.createdAt,
+      lastmod: article.updated_at || article.created_at,
       changefreq: 'weekly' as const,
       priority: 0.7
     }));
@@ -80,7 +80,7 @@ export async function generateSitemap(req: Request, res: Response) {
     const businesses = await storage.getBusinesses(1000, 0); // Get up to 1000 businesses
     const businessUrls = businesses.map(business => ({
       url: `${baseUrl}/businesses/${business.id}`,
-      lastmod: business.createdAt, // updatedAt not in current schema
+      lastmod: business.created_at, // updated_at not in current schema
       changefreq: 'monthly' as const,
       priority: 0.6
     }));
@@ -89,7 +89,7 @@ export async function generateSitemap(req: Request, res: Response) {
     const classifieds = await storage.getClassifieds(1000, 0); // Get up to 1000 classifieds
     const classifiedUrls = classifieds.map(classified => ({
       url: `${baseUrl}/classifieds/${classified.id}`,
-      lastmod: classified.createdAt, // updatedAt not in current schema
+      lastmod: classified.created_at, // updated_at not in current schema
       changefreq: 'daily' as const,
       priority: 0.6
     }));
@@ -127,7 +127,7 @@ export async function generateRSSFeed(req: Request, res: Response) {
       title: article.title,
       description: article.excerpt || article.content.substring(0, 200) + '...',
       link: `${baseUrl}/articles/${article.id}`,
-      pubDate: new Date(article.createdAt).toUTCString(),
+      pubDate: new Date(article.created_at).toUTCString(),
       author: 'Safra Report', // author relation not loaded
       category: undefined // category relation not loaded
     }));

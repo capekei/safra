@@ -8,9 +8,10 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
+    "noEmit": false,
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -30,27 +31,23 @@
       "@/*": ["./src/*"],
       "@/client/*": ["./src/client/*"],
       "@/server/*": ["./src/server/*"],
-      "@/shared/*": ["./src/shared/*"]
+      "@/shared/*": ["./src/shared/*"],
+      "~/client/*": ["./src/client/*"],
+      "~/server/*": ["./src/server/*"], 
+      "~/shared/*": ["./src/shared/*"]
     },
 
-    /* Type checking */
-    "skipDefaultLibCheck": true,
-    "preserveConstEnums": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": false,
-    
-    /* Decorators (if needed) */
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    /* Output configuration */
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "removeComments": false,
+    "importHelpers": true
   },
   "include": [
-    "src/**/*",
-    "src/**/*.tsx",
-    "src/**/*.ts",
-    "src/**/*.jsx",
-    "src/**/*.js",
-    "vite.config.ts",
-    "drizzle.config.ts"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
@@ -60,17 +57,10 @@
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.spec.ts",
-    "**/*.spec.tsx",
-    "coverage",
-    "scripts/migrate-database.ts"
+    "**/*.spec.tsx"
   ],
   "ts-node": {
     "esm": true,
-    "experimentalSpecifierResolution": "node",
-    "transpileOnly": true,
-    "compilerOptions": {
-      "module": "ESNext",
-      "noEmit": false
-    }
+    "experimentalSpecifierResolution": "node"
   }
 }

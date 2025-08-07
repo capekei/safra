@@ -7,8 +7,9 @@ const storage = new DatabaseStorage();
 import { z } from "zod";
 import adminRoutes from "./routes/admin/routes";
 
-// Using unified JWT authentication system
+// Using session-based authentication system
 import userRoutes from "./routes/user/routes";
+import authRoutes from "./routes/auth.routes";
 import { db } from "./db";
 import { articles, categories, classifieds, businesses, classifiedCategories, businessCategories, provinces } from "../shared/index.js";
 import { eq, desc, sql } from "drizzle-orm";
@@ -17,7 +18,10 @@ import { generateOpenAPISpec } from "./routes/api-docs";
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Modern JWT authentication system
+  // Modern session-based authentication system
+  
+  // Mount auth routes first
+  app.use("/api/auth", authRoutes);
   
   // Mount user routes
   app.use("/api/user", userRoutes);
@@ -314,7 +318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Artículo no encontrado." });
       }
 
-      const relatedArticles = await storage.getRelatedArticles(article.id, article.categoryId);
+      const relatedArticles = await storage.getRelatedArticles(article.id, article.category_id);
       res.json(relatedArticles);
     } catch (error) {
       console.error('Error fetching related articles:', error);

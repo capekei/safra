@@ -36,6 +36,7 @@ import { db, pool } from '../db.js';
 import { eq, desc, and, sql, ilike, gte, or } from 'drizzle-orm';
 // dotenv configured in main index.ts entry point
 import { handleStorageError, convertToStringArray, slugify } from '../lib/helpers/dominican';
+import { FieldMapper } from '../utils/field-mapper.js';
 
 // Typed interfaces for user-generated content
 export interface CreateUserClassifiedData {
@@ -264,29 +265,13 @@ export class DatabaseStorage implements IStorage {
       
       const result = await this.getPool().query(query, params);
       
-      return result.rows.map((row: any) => ({
-        id: row.id,
-        title: row.title,
-        slug: row.slug,
-        excerpt: row.excerpt,
-        content: row.content,
-        featuredImage: row.featured_image,
-        videoUrl: row.video_url,
-        isBreaking: row.is_breaking,
-        isFeatured: row.is_featured,
-        published: row.published,
-        publishedAt: row.published_at,
-        authorId: row.author_id,
-        categoryId: row.category_id,
-        views: row.views,
-        likes: row.likes,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
+      return FieldMapper.mapRows(result.rows.map((row: any) => ({
+        ...row,
         category: row.category_name ? {
           name: row.category_name,
           slug: row.category_slug,
         } : undefined,
-      }));
+      })));
       
     } catch (error) {
       return handleStorageError('DATABASE_ERROR', `Failed to fetch articles with options: ${JSON.stringify(options)}`, error);
@@ -331,30 +316,14 @@ export class DatabaseStorage implements IStorage {
       }
       
       const row = result.rows[0];
-      return {
-        id: row.id,
-        title: row.title,
-        slug: row.slug,
-        excerpt: row.excerpt,
-        content: row.content,
-        featuredImage: row.featured_image,
-        videoUrl: row.video_url,
-        isBreaking: row.is_breaking,
-        isFeatured: row.is_featured,
-        published: row.published,
-        publishedAt: row.published_at,
-        authorId: row.author_id,
-        categoryId: row.category_id,
-        views: row.views,
-        likes: row.likes,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
+      return FieldMapper.mapRow({
+        ...row,
         category: row.category_name ? {
           name: row.category_name,
           slug: row.category_slug,
         } : undefined,
         authorName: row.author_name,
-      };
+      });
     } catch (error) {
       console.error('Storage error in getArticleBySlug:', error);
       return handleStorageError('NOT_FOUND', `Article with slug ${slug} not found`, error);
@@ -370,44 +339,44 @@ export class DatabaseStorage implements IStorage {
           slug: articles.slug,
           excerpt: articles.excerpt,
           content: articles.content,
-          featuredImage: articles.featuredImage,
-          videoUrl: articles.videoUrl,
-          isBreaking: articles.isBreaking,
-          isFeatured: articles.isFeatured,
+          featured_image: articles.featured_image,
+          video_url: articles.video_url,
+          is_breaking: articles.is_breaking,
+          is_featured: articles.is_featured,
           published: articles.published,
-          publishedAt: articles.publishedAt,
-          authorId: articles.authorId,
-          categoryId: articles.categoryId,
-          categoryIds: articles.categoryIds,
-          provinceId: articles.provinceId,
+          published_at: articles.published_at,
+          author_id: articles.author_id,
+          category_id: articles.category_id,
+          category_ids: articles.category_ids,
+          province_id: articles.province_id,
           status: articles.status,
-          scheduledFor: articles.scheduledFor,
+          scheduled_for: articles.scheduled_for,
           images: articles.images,
           videos: articles.videos,
           likes: articles.likes,
           comments: articles.comments,
           views: articles.views,
-          createdAt: articles.createdAt,
-          updatedAt: articles.updatedAt,
+          created_at: articles.created_at,
+          updated_at: articles.updated_at,
           category: {
             id: categories.id,
             name: categories.name,
             slug: categories.slug,
             icon: categories.icon,
             description: categories.description,
-            createdAt: categories.createdAt,
+            created_at: categories.created_at,
           },
           province: {
             id: provinces.id,
             name: provinces.name,
             code: provinces.code,
           },
-          authorName: adminUsers.first_name,
+          author_name: adminUsers.first_name,
         })
         .from(articles)
-        .leftJoin(categories, eq(articles.categoryId, categories.id))
-        .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
+        .leftJoin(categories, eq(articles.category_id, categories.id))
+        .leftJoin(provinces, eq(articles.province_id, provinces.id))
+        .leftJoin(adminUsers, eq(articles.author_id, adminUsers.id))
         .where(eq(articles.id, id))
         .limit(1);
       return result[0] || undefined;
@@ -425,25 +394,25 @@ export class DatabaseStorage implements IStorage {
           slug: articles.slug,
           excerpt: articles.excerpt,
           content: articles.content,
-          featuredImage: articles.featuredImage,
-          videoUrl: articles.videoUrl,
-          isBreaking: articles.isBreaking,
-          isFeatured: articles.isFeatured,
+          featured_image: articles.featured_image,
+          video_url: articles.video_url,
+          is_breaking: articles.is_breaking,
+          is_featured: articles.is_featured,
           published: articles.published,
-          publishedAt: articles.publishedAt,
-          authorId: articles.authorId,
-          categoryId: articles.categoryId,
-          categoryIds: articles.categoryIds,
-          provinceId: articles.provinceId,
+          published_at: articles.published_at,
+          author_id: articles.author_id,
+          category_id: articles.category_id,
+          category_ids: articles.category_ids,
+          province_id: articles.province_id,
           status: articles.status,
-          scheduledFor: articles.scheduledFor,
+          scheduled_for: articles.scheduled_for,
           images: articles.images,
           videos: articles.videos,
           likes: articles.likes,
           comments: articles.comments,
           views: articles.views,
-          createdAt: articles.createdAt,
-          updatedAt: articles.updatedAt,
+          created_at: articles.created_at,
+          updated_at: articles.updated_at,
           // Relations
           category: {
             id: categories.id,
@@ -451,21 +420,21 @@ export class DatabaseStorage implements IStorage {
             slug: categories.slug,
             icon: categories.icon,
             description: categories.description,
-            createdAt: categories.createdAt,
+            created_at: categories.created_at,
           },
           province: {
             id: provinces.id,
             name: provinces.name,
             code: provinces.code,
           },
-          authorName: adminUsers.first_name,
+          author_name: adminUsers.first_name,
         })
         .from(articles)
-        .leftJoin(categories, eq(articles.categoryId, categories.id))
-        .leftJoin(provinces, eq(articles.provinceId, provinces.id))
-        .leftJoin(adminUsers, eq(articles.authorId, adminUsers.id))
-        .where(and(eq(articles.categoryId, categoryId), sql`${articles.id} != ${articleId}`))
-        .orderBy(desc(articles.publishedAt))
+        .leftJoin(categories, eq(articles.category_id, categories.id))
+        .leftJoin(provinces, eq(articles.province_id, provinces.id))
+        .leftJoin(adminUsers, eq(articles.author_id, adminUsers.id))
+        .where(and(eq(articles.category_id, categoryId), sql`${articles.id} != ${articleId}`))
+        .orderBy(desc(articles.published_at))
         .limit(limit);
 
       return result;
@@ -522,15 +491,7 @@ export class DatabaseStorage implements IStorage {
         ORDER BY name ASC
       `);
       
-      return result.rows.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        slug: row.slug,
-        description: row.description,
-        icon: row.icon,
-        color: row.color,
-        created_at: row.created_at,
-      }));
+      return FieldMapper.mapRows(result.rows);
     } catch (error) {
       console.error('Storage error in getCategories:', error);
       return handleStorageError('DATABASE_ERROR', 'Failed to fetch categories', error);
@@ -555,17 +516,17 @@ export class DatabaseStorage implements IStorage {
       if (categorySlug) {
         const category = await this.getClassifiedCategoryBySlug(categorySlug);
         if(category) {
-          whereClauses.push(eq(classifieds.categoryId, category.id));
+          whereClauses.push(eq(classifieds.category_id, category.id));
         }
       }
       if (provinceId) {
-        whereClauses.push(eq(classifieds.provinceId, provinceId));
+        whereClauses.push(eq(classifieds.province_id, provinceId));
       }
 
       return await this.db.query.classifieds.findMany({
         where: whereClauses.length > 0 ? and(...whereClauses) : undefined,
         with: { category: true, province: true },
-        orderBy: [desc(classifieds.createdAt)],
+        orderBy: [desc(classifieds.created_at)],
         limit,
         offset,
       });
@@ -588,9 +549,9 @@ export class DatabaseStorage implements IStorage {
   async getActiveClassifieds(limit = 10): Promise<ClassifiedWithRelations[]> {
     try {
       return await this.db.query.classifieds.findMany({
-        where: and(eq(classifieds.status, 'active'), gte(classifieds.expiresAt, new Date())),
+        where: and(eq(classifieds.status, 'active'), gte(classifieds.expires_at, new Date())),
         with: { category: true, province: true },
-        orderBy: [desc(classifieds.createdAt)],
+        orderBy: [desc(classifieds.created_at)],
         limit,
       });
     } catch (error) {
@@ -636,17 +597,17 @@ export class DatabaseStorage implements IStorage {
       if (categorySlug) {
         const category = await this.getBusinessCategoryBySlug(categorySlug);
         if(category) {
-          whereClauses.push(eq(businesses.categoryId, category.id));
+          whereClauses.push(eq(businesses.category_id, category.id));
         }
       }
       if (provinceId) {
-        whereClauses.push(eq(businesses.provinceId, provinceId));
+        whereClauses.push(eq(businesses.province_id, provinceId));
       }
 
       return await this.db.query.businesses.findMany({
         where: whereClauses.length > 0 ? and(...whereClauses) : undefined,
         with: { category: true, province: true, reviews: true },
-        orderBy: [desc(businesses.createdAt)],
+        orderBy: [desc(businesses.created_at)],
         limit,
         offset,
       });
@@ -712,9 +673,9 @@ export class DatabaseStorage implements IStorage {
   async getReviewsByBusiness(businessId: number, limit = 10): Promise<ReviewWithRelations[]> {
     try {
       return await this.db.query.reviews.findMany({
-        where: eq(reviews.businessId, businessId),
+        where: eq(reviews.business_id, businessId),
         with: { business: true },
-        orderBy: [desc(reviews.createdAt)],
+        orderBy: [desc(reviews.created_at)],
         limit,
       });
     } catch (error) {
@@ -747,8 +708,8 @@ export class DatabaseStorage implements IStorage {
   async getApprovedReviews(businessId: number): Promise<Review[]> {
     try {
       return await this.db.query.reviews.findMany({
-        where: and(eq(reviews.businessId, businessId), eq(reviews.approved, true)),
-        orderBy: [desc(reviews.createdAt)],
+        where: and(eq(reviews.business_id, businessId), eq(reviews.approved, true)),
+        orderBy: [desc(reviews.created_at)],
       });
     } catch (error) {
       return handleStorageError('DATABASE_ERROR', 'Failed to fetch approved reviews', error);
@@ -780,29 +741,13 @@ export class DatabaseStorage implements IStorage {
       
       const result = await this.getPool().query(query, [limit]);
       
-      return result.rows.map((row: any) => ({
-        id: row.id,
-        title: row.title,
-        slug: row.slug,
-        excerpt: row.excerpt,
-        content: row.content,
-        featuredImage: row.featured_image,
-        videoUrl: row.video_url,
-        isBreaking: row.is_breaking,
-        isFeatured: row.is_featured,
-        published: row.published,
-        publishedAt: row.published_at,
-        authorId: row.author_id,
-        categoryId: row.category_id,
-        views: row.views,
-        likes: row.likes,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
+      return FieldMapper.mapRows(result.rows.map((row: any) => ({
+        ...row,
         category: {
           name: row.category_name,
           slug: row.category_slug
         }
-      }));
+      })));
     } catch (error) {
       return handleStorageError('DATABASE_ERROR', 'Failed to fetch trending articles', error);
     }
@@ -820,13 +765,11 @@ export class DatabaseStorage implements IStorage {
         ORDER BY name ASC
       `);
       
-      return result.rows.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        code: row.code,
+      return FieldMapper.mapRows(result.rows.map((row: any) => ({
+        ...row,
         slug: row.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
         created_at: new Date()
-      }));
+      })));
     } catch (error) {
       return handleStorageError('DATABASE_ERROR', 'Failed to fetch provinces', error);
     }
@@ -847,9 +790,9 @@ export class DatabaseStorage implements IStorage {
   async getUserClassifieds(userId: string): Promise<ClassifiedWithRelations[]> {
     try {
       return await this.db.query.classifieds.findMany({
-        where: eq(classifieds.userId, userId),
+        where: eq(classifieds.user_id, userId),
         with: { category: true, province: true },
-        orderBy: [desc(classifieds.createdAt)],
+        orderBy: [desc(classifieds.created_at)],
       });
     } catch (error) {
       return handleStorageError('DATABASE_ERROR', 'Failed to fetch user classifieds', error);
@@ -859,9 +802,9 @@ export class DatabaseStorage implements IStorage {
   async getUserReviews(userId: string): Promise<UserReviewWithBusiness[]> {
     try {
       const userReviews = await this.db.query.reviews.findMany({
-        where: eq(reviews.userId, userId),
+        where: eq(reviews.user_id, userId),
         with: { business: true },
-        orderBy: [desc(reviews.createdAt)],
+        orderBy: [desc(reviews.created_at)],
       });
       return userReviews.map((r: any) => ({ 
         ...r, 
@@ -895,7 +838,7 @@ export class DatabaseStorage implements IStorage {
   async getUserPreferences(userId: string): Promise<UserPreferencesData | undefined> {
     try {
       const result = await this.getDb().query.userPreferences.findFirst({
-        where: eq(userPreferences.userId, userId),
+        where: eq(userPreferences.user_id, userId),
       });
       return result as UserPreferencesData | undefined;
     } catch (error) {
@@ -905,7 +848,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserPreferences(userId: string, preferences: UpdateUserPreferencesData): Promise<UserPreferencesData> {
     try {
-      const [result] = await this.db.update(userPreferences).set(preferences as any).where(eq(userPreferences.userId, userId)).returning();
+      const [result] = await this.db.update(userPreferences).set(preferences as any).where(eq(userPreferences.user_id, userId)).returning();
       if(!result) {
         throw new Error('Failed to update preferences');
       }

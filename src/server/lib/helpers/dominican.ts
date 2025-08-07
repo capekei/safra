@@ -24,7 +24,9 @@ export const DR_ERRORS = {
   NOT_FOUND: { error: 'No encontrado', code: 'NOT_FOUND' },
   PERMISSION_DENIED: { error: 'Acceso denegado', code: 'PERMISSION_DENIED' },
   INVALID_ID: { error: 'ID inválido', code: 'INVALID_ID' },
-  REQUIRED_FIELDS: { error: 'Campos requeridos faltantes', code: 'REQUIRED_FIELDS' }
+  REQUIRED_FIELDS: { error: 'Campos requeridos faltantes', code: 'REQUIRED_FIELDS' },
+  UPLOAD_ERROR: { error: 'Error de carga', code: 'UPLOAD_ERROR' },
+  DELETE_ERROR: { error: 'Error al eliminar', code: 'DELETE_ERROR' }
 } as const;
 
 // Mobile-optimized error display helper
