@@ -14,11 +14,11 @@ import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import morgan from "morgan";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { databaseErrorHandler } from "./middleware/database-error-handler";
+import { registerRoutes } from "./routes.js";
+import { setupVite, serveStatic, log } from "./vite.js";
+import { databaseErrorHandler } from "./middleware/database-error-handler.js";
 
-import { db, pool } from "./db";
+import { db, pool } from "./db.js";
 
 const app = express();
 

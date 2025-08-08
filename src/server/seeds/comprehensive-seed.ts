@@ -53,7 +53,7 @@ async function seedComprehensiveData() {
     try {
       await db.insert(provinces).values(provincesData).onConflictDoNothing();
     } catch (error) {
-      console.log("⚠️ Province insertion failed, table may have different schema:", error.message);
+      console.log("⚠️ Province insertion failed, table may have different schema:", (error as Error).message);
       // Try with minimal data structure
       const minimalProvinces = provincesData.map(p => ({ name: p.name, code: p.code }));
       await db.insert(provinces).values(minimalProvinces).onConflictDoNothing();

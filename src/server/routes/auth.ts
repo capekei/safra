@@ -92,7 +92,7 @@ export function createAuthRoutes(db: Pool): Router {
             firstName: result.user?.firstName,
             lastName: result.user?.lastName,
             role: result.user?.role,
-            emailVerified: result.user?.emailVerified
+            emailVerified: (result.user as any)?.emailVerified || false
           }
         });
       } else {
@@ -145,7 +145,7 @@ export function createAuthRoutes(db: Pool): Router {
             firstName: result.user?.firstName,
             lastName: result.user?.lastName,
             role: result.user?.role,
-            emailVerified: result.user?.emailVerified
+            emailVerified: (result.user as any)?.emailVerified || false
           },
           accessToken: result.accessToken
         });

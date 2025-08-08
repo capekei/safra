@@ -110,8 +110,8 @@ router.post("/articles", upload.fields([{ name: "images", maxCount: 5 }, { name:
     }
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-    const imageUrls = files?.images?.map(file => getFileUrl(file.filename, "images")) || [];
-    const videoUrls = files?.videos?.map(file => getFileUrl(file.filename, "videos")) || [];
+    const imageUrls = files?.images?.map(file => getFileUrl(file.filename, "mobile")) || [];
+    const videoUrls = files?.videos?.map(file => getFileUrl(file.filename, "mobile")) || [];
 
     const slug = data.slug || data.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 

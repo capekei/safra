@@ -236,7 +236,7 @@ export class DatabaseStorage implements IStorage {
         WHERE a.published = true
       `;
       
-      const params = [];
+      const params: any[] = [];
       let paramCount = 0;
       
       if (where) {
@@ -512,7 +512,7 @@ export class DatabaseStorage implements IStorage {
 
   async getClassifieds(limit = 20, offset = 0, categorySlug?: string, provinceId?: number): Promise<ClassifiedWithRelations[]> {
     try {
-      const whereClauses = [];
+      const whereClauses: any[] = [];
       if (categorySlug) {
         const category = await this.getClassifiedCategoryBySlug(categorySlug);
         if(category) {
@@ -593,7 +593,7 @@ export class DatabaseStorage implements IStorage {
 
   async getBusinesses(limit = 20, offset = 0, categorySlug?: string, provinceId?: number): Promise<BusinessWithRelations[]> {
     try {
-      const whereClauses = [];
+      const whereClauses: any[] = [];
       if (categorySlug) {
         const category = await this.getBusinessCategoryBySlug(categorySlug);
         if(category) {

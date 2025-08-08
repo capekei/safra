@@ -180,6 +180,7 @@ export const sessions = pgTable('sessions', {
   }).notNull(),
   ip_address: varchar('ip_address', { length: 45 }),
   user_agent: text('user_agent'),
+  is_active: boolean('is_active').default(true),
   created_at: timestamp('created_at').defaultNow(),
 });
 
@@ -225,6 +226,7 @@ export const adminSessions = pgTable('admin_sessions', {
   }).notNull(),
   ip_address: varchar('ip_address', { length: 45 }),
   user_agent: text('user_agent'),
+  is_active: boolean('is_active').default(true),
   created_at: timestamp('created_at').defaultNow(),
 });
 

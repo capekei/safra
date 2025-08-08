@@ -40,7 +40,7 @@ async function safeSeed() {
     }
 
   } catch (error) {
-    console.error("❌ Error during safe seeding:", error.message);
+    console.error("❌ Error during safe seeding:", (error as Error).message);
     console.log("⚠️ This is normal on first deployment - continuing...");
   }
 

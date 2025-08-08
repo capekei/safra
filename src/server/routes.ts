@@ -1,20 +1,20 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { DatabaseStorage } from "./database/storage";
-import { asyncErrorHandler } from "./middleware/database-error-handler";
+import { DatabaseStorage } from "./database/storage.js";
+import { asyncErrorHandler } from "./middleware/database-error-handler.js";
 
 const storage = new DatabaseStorage();
 import { z } from "zod";
-import adminRoutes from "./routes/admin/routes";
+import adminRoutes from "./routes/admin/routes.js";
 
 // Using session-based authentication system
-import userRoutes from "./routes/user/routes";
-import authRoutes from "./routes/auth.routes";
-import { db } from "./db";
+import userRoutes from "./routes/user/routes.js";
+import authRoutes from "./routes/auth.routes.js";
+import { db } from "./db.js";
 import { articles, categories, classifieds, businesses, classifiedCategories, businessCategories, provinces } from "../shared/index.js";
 import { eq, desc, sql } from "drizzle-orm";
 // import { generateSitemap, generateRSSFeed, generateRobotsTxt } from "./routes/seo";
-import { generateOpenAPISpec } from "./routes/api-docs";
+import { generateOpenAPISpec } from "./routes/api-docs.js";
 
 
 export async function registerRoutes(app: Express): Promise<Server> {

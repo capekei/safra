@@ -1,27 +1,38 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { validateSession, requireAuth, requireAdmin, type AuthRequest } from './session-auth.middleware.js';
+import { validateSession } from './session-auth.middleware.js';
 import { sessionAuth } from '../auth/session-auth.js';
 import { z } from "zod";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import csrf from "csrf";
+import type { InferSelectModel } from 'drizzle-orm';
+import { adminUsers } from '../../shared/schema.js';
 
 // User interface for legacy compatibility
 export interface DatabaseUser {
-  id: string;
+  id: string | number;
   email: string;
   role: string;
-  created_at: string;
-  updated_at: string;
-  is_active: boolean;
+  sessionId: string;
+  created_at?: string;
+  updated_at?: string;
+  is_active?: boolean;
 }
 
 export type AdminUser = InferSelectModel<typeof adminUsers>;
 
-// Auth Request interface for middleware
+// Auth Request interface for middleware - use the one from session-auth.middleware
 export interface AuthRequest extends Request {
   user?: DatabaseUser;
   adminUser?: AdminUser;
+  authSession?: {
+    id: string;
+    userId?: string;
+    adminUserId?: number;
+    expiresAt: Date;
+    ipAddress?: string;
+    userAgent?: string;
+  };
 }
 
 const router = Router();
@@ -98,7 +109,7 @@ export const authenticateAdmin = async (req: AuthRequest, res: Response, next: N
     }
 
     req.adminUser = result.user;
-    req.session = result.session;
+    req.authSession = result.session;
     next();
   } catch (error) {
     console.error('Error en authenticateAdmin:', error);
@@ -123,7 +134,7 @@ export const requireAdmin = async (req: AuthRequest, res: Response, next: NextFu
 
     // Check if user has sufficient admin privileges
     const validRoles = ['admin', 'super_admin'];
-    if (!validRoles.includes(req.adminUser.role)) {
+    if (!req.adminUser.role || !validRoles.includes(req.adminUser.role)) {
       return res.status(403).json({ 
         message: 'Permisos insuficientes - Se requieren permisos de administrador',
         code: 'INSUFFICIENT_PERMISSIONS'

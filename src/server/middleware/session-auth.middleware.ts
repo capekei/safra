@@ -9,25 +9,26 @@ import { sessionAuth } from "../auth/session-auth.js";
 // Extended Request interface for auth
 export interface AuthRequest extends Request {
   user?: {
-    id: string;
+    id: string | number;
     email: string;
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
     role: string;
-    emailVerified: boolean;
+    sessionId: string;
+    emailVerified?: boolean;
     provinceId?: string;
-    isActive: boolean;
+    isActive?: boolean;
   };
   adminUser?: {
     id: number;
     username: string;
     email: string;
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
     role: string;
     active: boolean;
   };
-  session?: {
+  authSession?: {
     id: string;
     userId?: string;
     adminUserId?: number;
@@ -49,7 +50,7 @@ export async function validateSession(req: AuthRequest, res: Response, next: Nex
       const result = await sessionAuth.validateSession(sessionId);
       if (result && result.user && result.session) {
         req.user = result.user;
-        req.session = result.session;
+        req.authSession = result.session;
         return next();
       }
     }
@@ -60,7 +61,7 @@ export async function validateSession(req: AuthRequest, res: Response, next: Nex
       const result = await sessionAuth.validateAdminSession(adminSessionId);
       if (result && result.user && result.session) {
         req.adminUser = result.user;
-        req.session = result.session;
+        req.authSession = result.session;
         return next();
       }
     }
@@ -68,13 +69,13 @@ export async function validateSession(req: AuthRequest, res: Response, next: Nex
     // No valid session found, but don't error - let route decide
     req.user = undefined;
     req.adminUser = undefined;
-    req.session = undefined;
+    req.authSession = undefined;
     next();
   } catch (error) {
     console.error('Session validation error:', error);
     req.user = undefined;
     req.adminUser = undefined;
-    req.session = undefined;
+    req.authSession = undefined;
     next();
   }
 }
@@ -242,9 +243,9 @@ export function requireProvince(...provinces: string[]) {
  */
 export async function refreshNearExpirySession(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    if (req.session && req.session.expiresAt) {
+    if (req.authSession && req.authSession.expiresAt) {
       const now = new Date();
-      const expiresAt = new Date(req.session.expiresAt);
+      const expiresAt = new Date(req.authSession.expiresAt);
       const timeUntilExpiry = expiresAt.getTime() - now.getTime();
       const oneHour = 60 * 60 * 1000;
 
@@ -255,8 +256,8 @@ export async function refreshNearExpirySession(req: AuthRequest, res: Response, 
 
         if (req.user) {
           // Refresh user session
-          await sessionAuth.invalidateSession(req.session.id);
-          const { sessionId, expiresAt: newExpiresAt } = await sessionAuth.createSession(req.user.id, ip, userAgent);
+          await sessionAuth.invalidateSession(req.authSession?.id || '');
+          const { sessionId, expiresAt: newExpiresAt } = await sessionAuth.createSession(String(req.user.id), ip, userAgent);
           
           const cookie = sessionAuth.createSessionCookie(sessionId, newExpiresAt);
           res.setHeader("Set-Cookie", [
